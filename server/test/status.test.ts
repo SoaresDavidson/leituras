@@ -16,6 +16,10 @@ describe('computeStatus', () => {
   it('is pausado when not read for more than 30 days', () => {
     expect(computeStatus({ progress: 40, lastReadAt: '2026-08-01', today, statusManual: null })).toBe('pausado');
   });
+  it('counts the 30-day window in calendar days', () => {
+    expect(computeStatus({ progress: 40, lastReadAt: '2026-09-04', today, statusManual: null })).toBe('lendo');
+    expect(computeStatus({ progress: 40, lastReadAt: '2026-09-03', today, statusManual: null })).toBe('pausado');
+  });
   it('is pausado when never read', () => {
     expect(computeStatus({ progress: 0, lastReadAt: null, today, statusManual: null })).toBe('pausado');
   });
