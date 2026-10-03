@@ -113,7 +113,7 @@ function koinsight:onLeiturasSync()
   self:performFullSync()
 end
 
--- Perform full sync of all books with progress UI
+-- Perform full sync of all books
 function koinsight:performFullSync()
   local url = self.koinsight_settings:getServerURL()
   if not url or url == "" then
@@ -123,55 +123,23 @@ function koinsight:performFullSync()
     return
   end
 
-  -- Show initial message
-  local progress_info = InfoMessage:new({
-    text = _("Starting sync..\nScanning reading history for books with annotations."),
-  })
-  UIManager:show(progress_info)
-
-  -- Run sync in background with progress updates
   local NetworkMgr = require("ui/network/manager")
   NetworkMgr:runWhenOnline(function()
-    local ok, err = pcall(function()
-      KoInsightUpload.syncAllBooks(url, function(progress)
-        -- Update progress UI
-        if progress.phase == "syncing" then
-          UIManager:close(progress_info)
-          progress_info = InfoMessage:new({
-            text = string.format(
-              _("Syncing: %d/%d books\n%d annotations for current book"),
-              progress.current,
-              progress.total,
-              progress.annotation_count
-            ),
-          })
-          UIManager:show(progress_info)
-        elseif progress.phase == "complete" then
-          UIManager:close(progress_info)
-          if progress.total == 0 then
-            UIManager:show(InfoMessage:new({
-              text = _("No books with annotations found in reading history."),
-              timeout = 3,
-            }))
-          else
-            UIManager:show(InfoMessage:new({
-              text = string.format(
-                _("Sync complete!\n%d/%d books synced successfully\n%d failed"),
-                progress.success,
-                progress.total,
-                progress.failed
-              ),
-              timeout = 5,
-            }))
-          end
-        end
-      end)
-    end)
+    local progress_info = InfoMessage:new({ text = _("Syncing reading statistics…") })
+    UIManager:show(progress_info)
+    -- The sync blocks the UI loop until it returns: paint the message now or it never shows
+    UIManager:forceRePaint()
+
+    local ok, synced, message = pcall(KoInsightUpload.syncAllBooks, url)
+    UIManager:close(progress_info)
 
     if not ok then
-      UIManager:close(progress_info)
-      logger.err("[Leituras] Full sync failed: " .. tostring(err))
-      UIManager:show(InfoMessage:new({ text = _("Sync failed: " .. tostring(err)), timeout = 5 }))
+      logger.err("[Leituras] Full sync failed: " .. tostring(synced))
+      UIManager:show(InfoMessage:new({ text = _("Sync failed: ") .. tostring(synced), timeout = 5 }))
+    elseif synced then
+      UIManager:show(InfoMessage:new({ text = _("Sync complete!"), timeout = 3 }))
+    elseif message then
+      UIManager:show(InfoMessage:new({ text = message, timeout = 5 }))
     end
   end)
 end

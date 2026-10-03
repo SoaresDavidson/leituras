@@ -50,6 +50,7 @@ local function send_device_data(server_url, silent)
   if ok ~= true and not silent then
     render_response_message(response, "Error:", "Unable to register device.")
   end
+  return ok, response
 end
 
 local function send_statistics_data(server_url, silent)
@@ -67,9 +68,10 @@ local function send_statistics_data(server_url, silent)
     logger.info("[Leituras] Syncing", annotation_count, "annotations")
   end
 
+  local books = KoInsightDbReader.bookData()
   local body = {
-    stats = KoInsightDbReader.progressData(),
-    books = KoInsightDbReader.bookData(),
+    stats = KoInsightDbReader.progressData(books),
+    books = books,
     annotations = annotations,
     version = const.VERSION,
   }
@@ -85,149 +87,7 @@ local function send_statistics_data(server_url, silent)
       render_response_message(response, "Error:", "Data upload failed.")
     end
   end
-end
-
--- Send annotations for a specific book
-local function send_book_annotations(server_url, book_md5, annotations, total_pages, book_metadata)
-  local url = server_url .. API_UPLOAD_LOCATION
-  local device_id = G_reader_settings:readSetting("device_id")
-
-  -- Clean up annotations for JSON serialization
-  local cleaned_annotations = KoInsightAnnotationReader.cleanAnnotations(annotations, total_pages)
-
-  -- Use provided book metadata instead of querying database
-  -- This allows bulk sync to work even if book isn't in statistics DB yet
-  local book_to_send = book_metadata
-
-  -- Fallback: try to get from statistics database if metadata not provided
-  if not book_to_send then
-    local all_books = KoInsightDbReader.bookData()
-    for _, book in ipairs(all_books) do
-      if book.md5 == book_md5 then
-        book_to_send = book
-        break
-      end
-    end
-  end
-
-  -- WARN: We MUST have book metadata to send annotations
-  -- The server has a foreign key constraint: annotations.book_md5 -> book.md5
-  -- If we don't send book data, annotation insert will fail
-  if not book_to_send then
-    logger.err(
-      "[Leituras] Cannot sync annotations for book " .. book_md5 .. ": no book metadata available"
-    )
-    return false, { error = "No book metadata available" }
-  end
-
-  -- Create minimal payload
-  local annotations_by_book = {}
-  annotations_by_book[book_md5] = cleaned_annotations
-
-  local body = {
-    stats = {}, -- empty stats on annotations sync path, handled server side
-    books = { book_to_send }, -- Always send book metadata for FK constraint
-    annotations = annotations_by_book,
-    device_id = device_id,
-    version = const.VERSION,
-  }
-
-  body = JSON.encode(body)
-  return callApi("POST", url, get_headers(body), body)
-end
-
--- Bulk sync all books with annotations
-local function bulk_sync_all_books(server_url, progress_callback)
-  logger.info("[Leituras] Starting bulk sync of all books")
-
-  -- Get all books with annotations from reading history
-  local books_with_annotations = KoInsightAnnotationReader.getAllBooksWithAnnotations()
-
-  if #books_with_annotations == 0 then
-    logger.info("[Leituras] No books with annotations found")
-    if progress_callback then
-      progress_callback({
-        phase = "complete",
-        total = 0,
-        success = 0,
-        failed = 0,
-        message = "No books with annotations found",
-      })
-    end
-    return
-  end
-
-  logger.info("[Leituras] Found", #books_with_annotations, "books to sync")
-
-  local total_books = #books_with_annotations
-  local success_count = 0
-  local failed_count = 0
-
-  -- Sync each book one by one
-  for i, book_info in ipairs(books_with_annotations) do
-    logger.info(
-      string.format(
-        "[Leituras] Syncing book %d/%d (MD5: %s, %d annotations)",
-        i,
-        total_books,
-        book_info.md5,
-        book_info.annotation_count
-      )
-    )
-
-    -- Report progress
-    if progress_callback then
-      progress_callback({
-        phase = "syncing",
-        current = i,
-        total = total_books,
-        book_md5 = book_info.md5,
-        annotation_count = book_info.annotation_count,
-      })
-    end
-
-    -- Send annotations for this book
-    local ok, response = send_book_annotations(
-      server_url,
-      book_info.md5,
-      book_info.annotations,
-      book_info.total_pages,
-      book_info.book_metadata -- Pass metadata from sidecar
-    )
-
-    if ok then
-      success_count = success_count + 1
-      logger.info("[Leituras] Successfully synced book:", book_info.md5)
-    else
-      failed_count = failed_count + 1
-      logger.err("[Leituras] Failed to sync book:", book_info.md5)
-    end
-
-    -- Small delay between requests to avoid overwhelming the server
-    -- and to allow UI to update
-    if i < total_books then
-      UIManager:nextTick(function() end)
-    end
-  end
-
-  logger.info(
-    string.format(
-      "[Leituras] Bulk sync complete: %d/%d books synced successfully, %d failed",
-      success_count,
-      total_books,
-      failed_count
-    )
-  )
-
-  -- Report completion
-  if progress_callback then
-    progress_callback({
-      phase = "complete",
-      total = total_books,
-      success = success_count,
-      failed = failed_count,
-    })
-  end
+  return ok, response
 end
 
 -- Sync current book only (stats + current book annotations)
@@ -246,23 +106,33 @@ function KoInsightUpload.syncCurrentBook(server_url, silent)
   send_statistics_data(server_url, silent)
 end
 
--- Sync all books (stats + all book annotations)
-function KoInsightUpload.syncAllBooks(server_url, progress_callback)
+-- Sync the whole statistics DB (all books' stats and metadata).
+-- The server ignores annotations, so there is no per-book request: each one would
+-- block the UI for nothing.
+-- Returns true, or false and a message for the user (nil when callApi already showed one).
+function KoInsightUpload.syncAllBooks(server_url)
   if server_url == nil or server_url == "" then
-    UIManager:show(InfoMessage:new({
-      text = _("Please configure the server URL first."),
-    }))
-    return
+    return false, _("Please configure the server URL first.")
   end
 
-  send_device_data(server_url, true) -- silent
+  local function failure(err)
+    if err == "network_error" then
+      return false, _("Could not reach the Leituras server at") .. " " .. server_url
+    end
+    return false, nil -- callApi showed the server error
+  end
 
-  -- First, sync all statistics data from the database
-  -- This includes all reading progress (page_stat_data) and book metadata
-  send_statistics_data(server_url, true) -- silent
+  -- Stop at the first failure instead of waiting for every request to time out
+  local ok, err = send_device_data(server_url, true) -- silent
+  if not ok then
+    return failure(err)
+  end
 
-  -- Then, sync all annotations for all books
-  bulk_sync_all_books(server_url, progress_callback)
+  ok, err = send_statistics_data(server_url, true) -- silent
+  if not ok then
+    return failure(err)
+  end
+  return true
 end
 
 return KoInsightUpload

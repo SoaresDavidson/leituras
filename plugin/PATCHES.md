@@ -25,3 +25,11 @@ Reapply these when pulling upstream changes:
    - `main.lua`: `isWiFiConnected()` returns `false` when the check fails, so suspend sync never runs blind.
    - `call_api.lua`, `db_reader.lua`, `upload.lua`, `main.lua`: helper functions and `message` made `local`
      so they no longer leak into KOReader's shared global table.
+6. Manual "Synchronize data" no longer freezes the device (it ran every request on the UI loop):
+   - `upload.lua`: `syncAllBooks` sends only device + statistics (the server ignores annotations),
+     stops at the first failure and returns `ok, message`; the per-book annotation loop is gone,
+     and with it `getAllBooksWithAnnotations`/`getBookDataFromSidecar` in `annotation_reader.lua`.
+   - `main.lua`: `performFullSync` paints its message with `forceRePaint()` before the blocking sync
+     and shows "Could not reach the Leituras server" on network errors.
+   - `db_reader.lua`: `progressData(books)` maps book id -> md5 instead of a linear search per row,
+     reuses the caller's `bookData()`, and the live page count is read once from the open document.
