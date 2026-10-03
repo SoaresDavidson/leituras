@@ -7,6 +7,12 @@ describe('computeStatus', () => {
   it('status_manual always wins', () => {
     expect(computeStatus({ progress: 100, lastReadAt: today, today, statusManual: 'pausado' })).toBe('pausado');
   });
+  it('manual lido wins over low progress', () => {
+    expect(computeStatus({ progress: 10, lastReadAt: today, today, statusManual: 'lido' })).toBe('lido');
+  });
+  it('is lendo just below 95% with a recent session', () => {
+    expect(computeStatus({ progress: 94, lastReadAt: today, today, statusManual: null })).toBe('lendo');
+  });
   it('is lido from 95% progress', () => {
     expect(computeStatus({ progress: 95, lastReadAt: '2025-01-01', today, statusManual: null })).toBe('lido');
   });
