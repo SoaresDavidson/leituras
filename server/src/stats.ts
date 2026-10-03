@@ -1,5 +1,5 @@
 import type { ReadingStatus } from '@leituras/shared';
-import { dayKey } from './dates';
+import { daysBetween, dayKey } from './dates';
 
 export type StatRow = { page: number; start_time: number; duration: number; total_pages: number };
 
@@ -73,6 +73,8 @@ export type StatusInput = {
 };
 
 export function computeStatus(input: StatusInput): ReadingStatus {
-  // TODO(human)
+  if (input.statusManual) return input.statusManual;
+  if (input.progress >= FINISHED_PROGRESS) return 'lido';
+  if (input.lastReadAt != null && daysBetween(input.lastReadAt, input.today) < READING_WINDOW_DAYS) return 'lendo';
   return 'pausado';
 }
