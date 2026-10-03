@@ -16,3 +16,9 @@ Reapply these when pulling upstream changes:
      `setServerSettings(url, token)` replaces `setServerURL(url)`.
    - server settings dialog gains a password field for the token; Apply rejects an empty token.
 4. `upload.lua`: `get_headers()` sends `Authorization: Bearer <token>` on every request.
+5. Bug fixes over upstream (candidates to send upstream):
+   - `call_api.lua`: on HTTP errors, decode the response body and show the server's `error` field
+     (e.g. "Server error: Invalid token"); log the error once.
+   - `main.lua`: `isWiFiConnected()` returns `false` when the check fails, so suspend sync never runs blind.
+   - `call_api.lua`, `db_reader.lua`, `upload.lua`, `main.lua`: helper functions and `message` made `local`
+     so they no longer leak into KOReader's shared global table.

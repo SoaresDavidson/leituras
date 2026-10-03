@@ -100,7 +100,7 @@ function KoInsightDbReader.bookData()
   return books
 end
 
-function get_md5_by_id(books, target_id)
+local function get_md5_by_id(books, target_id)
   for _, book in ipairs(books) do
     if book.id == target_id then
       return book.md5

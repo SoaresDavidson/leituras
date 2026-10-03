@@ -15,7 +15,7 @@ local API_DEVICE_LOCATION = "/api/plugin/device"
 
 local KoInsightUpload = {}
 
-function get_headers(body)
+local function get_headers(body)
   local headers = {
     ["Content-Type"] = "application/json",
     ["Content-Length"] = tostring(#body),
@@ -24,7 +24,7 @@ function get_headers(body)
   return headers
 end
 
-function render_response_message(response, prefix, default_text)
+local function render_response_message(response, prefix, default_text)
   local text = prefix .. " " .. default_text
   if response ~= nil and response["message"] ~= nil then
     logger.dbg("[KoInsight] API message received: ", JSON.encode(response))
@@ -36,7 +36,7 @@ function render_response_message(response, prefix, default_text)
   }))
 end
 
-function send_device_data(server_url, silent)
+local function send_device_data(server_url, silent)
   local url = server_url .. API_DEVICE_LOCATION
   local body = {
     id = G_reader_settings:readSetting("device_id"),
@@ -52,7 +52,7 @@ function send_device_data(server_url, silent)
   end
 end
 
-function send_statistics_data(server_url, silent)
+local function send_statistics_data(server_url, silent)
   local url = server_url .. API_UPLOAD_LOCATION
 
   -- Get annotations from currently opened book
@@ -88,7 +88,7 @@ function send_statistics_data(server_url, silent)
 end
 
 -- Send annotations for a specific book
-function send_book_annotations(server_url, book_md5, annotations, total_pages, book_metadata)
+local function send_book_annotations(server_url, book_md5, annotations, total_pages, book_metadata)
   local url = server_url .. API_UPLOAD_LOCATION
   local device_id = G_reader_settings:readSetting("device_id")
 
@@ -137,7 +137,7 @@ function send_book_annotations(server_url, book_md5, annotations, total_pages, b
 end
 
 -- Bulk sync all books with annotations
-function bulk_sync_all_books(server_url, progress_callback)
+local function bulk_sync_all_books(server_url, progress_callback)
   logger.info("[KoInsight] Starting bulk sync of all books")
 
   -- Get all books with annotations from reading history

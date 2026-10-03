@@ -244,7 +244,7 @@ function koinsight:performSyncOnSuspend()
   end)
 
   if not success then
-    message = "Error during auto sync: " .. tostring(error_msg)
+    local message = "Error during auto sync: " .. tostring(error_msg)
     logger.err("[KoInsight] " .. message)
     UIManager:show(InfoMessage:new({
       text = _(message),
@@ -338,8 +338,8 @@ function koinsight:isWiFiConnected()
 
   if not success then
     logger.err("[KoInsight] Error checking WiFi status:", result)
-    -- If we can't check WiFi status, assume it's available
-    return true
+    -- If we can't check WiFi status, assume it's not available rather than syncing blind
+    return false
   end
 
   logger.dbg("[KoInsight] WiFi status - On:", result and "true" or "false")

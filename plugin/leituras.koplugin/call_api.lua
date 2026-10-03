@@ -8,7 +8,7 @@ local JSON = require("json")
 local InfoMessage = require("ui/widget/infomessage")
 local _ = require("gettext")
 
-function response_not_valid(content)
+local function response_not_valid(content)
   logger.err("[KoInsight] callApi: response was not valid JSON", content)
   UIManager:show(InfoMessage:new({
     text = _("Server response is not valid."),
@@ -62,14 +62,16 @@ return function(method, url, headers, body, filepath, quiet)
       return false, "invalid_response"
     end
   else
+    -- The server answers errors as JSON { error = "..." }; show it so e.g. a wrong token is visible
+    local decoded_ok, error_body = pcall(JSON.decode, table.concat(sink))
+    local server_error = decoded_ok and type(error_body) == "table" and error_body.error or nil
+    logger.err("[KoInsight] callApi: HTTP error", status or code, resp_headers, server_error)
     if not quiet then
-      logger.err("[KoInsight] callApi: HTTP error", status or code, resp_headers, result)
       UIManager:show(InfoMessage:new({
-        text = _("Server error" .. (result and ": " .. result["error"] or "")),
+        text = _("Server error") .. (server_error and (": " .. tostring(server_error)) or ""),
       }))
     end
 
-    logger.err("[KoInsight] callApi: HTTP error", status or code, resp_headers)
     return false, "http_error", code
   end
 end
