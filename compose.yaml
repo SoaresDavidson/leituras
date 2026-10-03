@@ -3,8 +3,11 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    environment:
+      # .env's DATA_PATH is the host path (mounted below); inside the container the DB lives at /data
+      DATA_PATH: /data
     ports:
       # Bind to the server's LAN IP only (set LAN_IP in .env), never 0.0.0.0
       - "${LAN_IP:-127.0.0.1}:3333:3333"
     volumes:
-      - ./data:/data
+      - ${DATA_PATH:-./data}:/data
