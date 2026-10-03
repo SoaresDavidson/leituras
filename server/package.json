@@ -1,0 +1,31 @@
+{
+  "name": "@leituras/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file-if-exists=../.env watch src/main.ts",
+    "build": "esbuild src/main.ts src/cli.ts --bundle --platform=node --format=esm --packages=external --outdir=dist",
+    "start": "node --env-file-if-exists=../.env dist/main.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p .",
+    "set-password": "tsx --env-file-if-exists=../.env src/cli.ts set-password",
+    "build-plugin": "tsx --env-file-if-exists=../.env src/cli.ts build-plugin"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
+    "better-sqlite3": "^12.4.1",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@leituras/shared": "*",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^6.0.3",
+    "esbuild": "^0.25.0",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}
