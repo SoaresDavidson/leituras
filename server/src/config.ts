@@ -6,7 +6,6 @@ export type Config = {
   dataPath: string;
   pluginToken: string;
   timeZone: string;
-  publicUrl: string; // URL the Kindle uses to reach this server, baked into the plugin
   webDistPath: string;
 };
 
@@ -18,7 +17,6 @@ export function loadConfig(env = process.env): Config {
     dataPath,
     pluginToken: env.PLUGIN_TOKEN ?? '',
     timeZone: env.TZ_NAME ?? 'America/Fortaleza',
-    publicUrl: env.PUBLIC_URL ?? '',
     webDistPath: path.resolve(env.WEB_DIST ?? path.join(import.meta.dirname, '../../web/dist')),
   };
 }

@@ -18,7 +18,6 @@ const config: Config = {
   dataPath: mkdtempSync(path.join(tmpdir(), 'leituras-')),
   pluginToken: TOKEN,
   timeZone: 'America/Fortaleza',
-  publicUrl: '',
   webDistPath: '/nonexistent',
 };
 

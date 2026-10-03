@@ -7,14 +7,14 @@ KOReader + `plugin/leituras.koplugin` (fork of the KoInsight plugin) -> `POST /a
 ## Setup
 
 ```bash
-cp .env.example .env          # fill PLUGIN_TOKEN (openssl rand -hex 32), PUBLIC_URL, LAN_IP
+cp .env.example .env          # fill PLUGIN_TOKEN (openssl rand -hex 32), LAN_IP
 docker compose up -d --build
 docker compose exec leituras node dist/cli.js set-password
-npm install && npm run build-plugin   # writes plugin/leituras.koplugin/leituras_config.lua
 ```
 
-Copy `plugin/leituras.koplugin` to `koreader/plugins/` on the Kindle over USB. Nothing to configure in KOReader:
-it syncs on suspend/power off (when Wi-Fi is on), or via Tools > Leituras > Synchronize data.
+Copy `plugin/leituras.koplugin` to `koreader/plugins/` on the Kindle over USB, then in KOReader open
+Tools > Leituras > Set server URL and token, and enter `http://<LAN_IP>:3333` and the `PLUGIN_TOKEN` from `.env`.
+It syncs on suspend/power off (when Wi-Fi is on), or via Tools > Leituras > Synchronize data.
 
 ## Development
 
