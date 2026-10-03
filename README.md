@@ -16,6 +16,19 @@ Copy `plugin/leituras.koplugin` to `koreader/plugins/` on the Kindle over USB, t
 Tools > Leituras > Set server URL and token, and enter `http://<LAN_IP>:3333` and the `PLUGIN_TOKEN` from `.env`.
 It syncs on suspend/power off (when Wi-Fi is on), or via Tools > Leituras > Synchronize data.
 
+To skip typing the token on the Kindle keyboard, create `koreader/settings/leituras.lua` over USB
+instead, with KOReader closed (it may overwrite the file on exit):
+
+```lua
+-- we can read Lua syntax here!
+return {
+    ["leituras"] = {
+        ["server_url"] = "http://<LAN_IP>:3333",
+        ["token"] = "<PLUGIN_TOKEN from .env>",
+    },
+}
+```
+
 ## Development
 
 ```bash
