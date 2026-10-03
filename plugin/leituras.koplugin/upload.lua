@@ -19,7 +19,7 @@ function get_headers(body)
   local headers = {
     ["Content-Type"] = "application/json",
     ["Content-Length"] = tostring(#body),
-    ["Authorization"] = "Bearer " .. KoInsightSettings:getToken(),
+    ["Authorization"] = "Bearer " .. KoInsightSettings:new():getToken(),
   }
   return headers
 end

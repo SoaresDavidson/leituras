@@ -7,7 +7,6 @@ local LuaSettings = require("luasettings")
 local MultiInputDialog = require("ui/widget/multiinputdialog")
 local UIManager = require("ui/uimanager")
 local Menu = require("ui/widget/menu")
-local LeiturasConfig = require("leituras_config")
 
 local KoInsightSettings = {
   settings = nil, -- LuaSettings handle
@@ -18,6 +17,7 @@ KoInsightSettings.__index = KoInsightSettings
 local SETTING_KEY = "leituras"
 local DEFAULTS = {
   server_url = "",
+  token = "",
   sync_on_suspend = true,
   aggressive_suspend_sync = false,
   suspend_connect_timeout_s = 10, -- clamped to [3, 60]
@@ -96,16 +96,15 @@ function KoInsightSettings:update(patch)
 end
 
 -- getters/setters
--- Server URL and token are baked into leituras_config.lua by the server's build-plugin script
 function KoInsightSettings:getServerURL()
-  return ((LeiturasConfig.server_url or ""):gsub("/*$", ""))
+  return self.data.server_url or DEFAULTS.server_url
 end
 function KoInsightSettings:getToken()
-  return LeiturasConfig.token or ""
+  return self.data.token or DEFAULTS.token
 end
-function KoInsightSettings:setServerURL(url)
+function KoInsightSettings:setServerSettings(url, token)
   url = tostring(url or ""):gsub("/*$", "")
-  self:update({ server_url = url })
+  self:update({ server_url = url, token = token })
 end
 
 function KoInsightSettings:getSyncOnSuspendEnabled()
@@ -195,12 +194,18 @@ end
 
 function KoInsightSettings:editServerSettings()
   self.settings_dialog = MultiInputDialog:new({
-    title = _("KoInsight settings"),
+    title = _("Leituras settings"),
     fields = {
       {
         text = self.data.server_url,
         description = _("Server URL:"),
         hint = _("http://example.com:port"),
+      },
+      {
+        text = self.data.token,
+        description = _("Token (PLUGIN_TOKEN):"),
+        hint = _("token"),
+        text_type = "password",
       },
     },
     buttons = {
@@ -216,7 +221,7 @@ function KoInsightSettings:editServerSettings()
           text = _("Info"),
           callback = function()
             UIManager:show(InfoMessage:new({
-              text = _("Enter the location of your KoInsight server"),
+              text = _("Enter the URL of your Leituras server and the PLUGIN_TOKEN from its .env"),
             }))
           end,
         },
@@ -225,6 +230,7 @@ function KoInsightSettings:editServerSettings()
           callback = function()
             local myfields = self.settings_dialog:getFields()
             local server_url = myfields[1]
+            local token = myfields[2]
 
             if server_url == "" then
                 UIManager:show(InfoMessage:new({
@@ -240,10 +246,17 @@ function KoInsightSettings:editServerSettings()
                 return
             end
 
-            self:setServerURL(server_url)
+            if token == "" then
+                UIManager:show(InfoMessage:new({
+                    text = _("Please enter the token."),
+                }))
+                return
+            end
+
+            self:setServerSettings(server_url, token)
             UIManager:close(self.settings_dialog)
             UIManager:show(InfoMessage:new({
-                text = _("KoInsight settings saved."),
+                text = _("Leituras settings saved."),
                 timeout = 2,
             }))
           end,

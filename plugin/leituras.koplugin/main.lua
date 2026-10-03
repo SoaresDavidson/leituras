@@ -72,16 +72,26 @@ function koinsight:addToMainMenu(menu_items)
         end,
       },
 
-      -- 6) About KoInsight
+      -- 5) Server URL and token
       {
-        text = _("About KoInsight"),
+        text = _("Set server URL and token"),
+        keep_menu_open = true,
+        separator = true, -- separator line *after* this item (before "About")
+        callback = function()
+          self.koinsight_settings:editServerSettings()
+        end,
+      },
+
+      -- 6) About Leituras
+      {
+        text = _("About Leituras"),
         keep_menu_open = true,
         callback = function()
           local const = require("./const")
           UIManager:show(InfoMessage:new({
-            text = "KoInsight is a sync plugin for KoInsight instances.\n\nPlugin version: "
+            text = "Leituras sync plugin, a fork of the KoInsight plugin (MIT).\n\nPlugin version: "
               .. const.VERSION
-              .. "\n\nSee https://github.com/GeorgeSG/koinsight.",
+              .. "\n\nSee https://github.com/SoaresDavidson/leituras.",
           }))
         end,
       },
@@ -108,7 +118,7 @@ function koinsight:performFullSync()
   local url = self.koinsight_settings:getServerURL()
   if not url or url == "" then
     UIManager:show(
-      InfoMessage:new({ text = _("KoInsight server URL is not configured."), timeout = 3 })
+      InfoMessage:new({ text = _("Leituras server URL is not configured."), timeout = 3 })
     )
     return
   end
