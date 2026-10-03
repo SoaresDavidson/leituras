@@ -26,3 +26,11 @@ npm test
 ```
 
 The plugin fork and how to reapply it on upstream changes: `plugin/PATCHES.md`.
+
+## License and credits
+
+MIT, see `LICENSE`.
+
+`plugin/leituras.koplugin` is a fork of the KOReader plugin from
+[KoInsight](https://github.com/GeorgeSG/koinsight) by Georgi Gardev, used under the MIT license
+(original notice in `plugin/LICENSE`). Leituras is not affiliated with or endorsed by KoInsight.
