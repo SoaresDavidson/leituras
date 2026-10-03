@@ -10,6 +10,9 @@ Reapply these when pulling upstream changes:
    - widget `name` and main menu key renamed `koinsight` -> `leituras` (also in `initMenuOrder`).
    - "Set server URL" menu entry renamed "Set server URL and token".
    - "About KoInsight" renamed "About Leituras", text points to this fork.
+   - gesture action `koinsight_sync`/`KoInsightSync` renamed `leituras_sync`/`LeiturasSync`
+     (handler `onLeiturasSync`, title "Leituras: Sync all books"), so it never clashes with upstream.
+   - log tag `[KoInsight]` renamed `[Leituras]` in every file.
 3. `settings.lua`:
    - settings file/key renamed `koinsight` -> `leituras`, so it never mixes with an installed upstream plugin.
    - new `token` setting, stored next to `server_url`; `getToken()` reads it,

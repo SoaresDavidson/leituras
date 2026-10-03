@@ -49,7 +49,7 @@ function KoInsightSettings:new()
   if success then
     obj.data = result
   else
-    logger.err("[KoInsight] Error reading settings, using defaults:", result)
+    logger.err("[Leituras] Error reading settings, using defaults:", result)
     obj.data = {}
   end
   return obj
@@ -63,25 +63,25 @@ function KoInsightSettings:reload()
   if success then
     self.data = result
   else
-    logger.err("[KoInsight] Error reloading settings:", result)
+    logger.err("[Leituras] Error reloading settings:", result)
   end
 end
 
 function KoInsightSettings:writeData()
   local success, error_msg = pcall(function()
     if not self.settings then
-      logger.err("[KoInsight] No settings object available for write")
+      logger.err("[Leituras] No settings object available for write")
       return false
     end
-    logger.dbg("[KoInsight] Saving settings data:", self.data)
+    logger.dbg("[Leituras] Saving settings data:", self.data)
     self.settings:saveSetting(SETTING_KEY, self.data)
     self.settings:flush()
-    logger.dbg("[KoInsight] Settings saved and flushed successfully")
+    logger.dbg("[Leituras] Settings saved and flushed successfully")
     return true
   end)
 
   if not success then
-    logger.err("[KoInsight] Error writing settings:", error_msg)
+    logger.err("[Leituras] Error writing settings:", error_msg)
     return false
   end
   return true
@@ -89,7 +89,7 @@ end
 
 function KoInsightSettings:update(patch)
   for k, v in pairs(patch or {}) do
-    logger.dbg("[KoInsight] Updating setting:", k, "=", v)
+    logger.dbg("[Leituras] Updating setting:", k, "=", v)
     self.data[k] = v
   end
   return self:writeData()
@@ -110,7 +110,7 @@ end
 function KoInsightSettings:getSyncOnSuspendEnabled()
   local value = self.data.sync_on_suspend
   if value == nil then
-    logger.dbg("[KoInsight] sync_on_suspend not set, using default:", DEFAULTS.sync_on_suspend)
+    logger.dbg("[Leituras] sync_on_suspend not set, using default:", DEFAULTS.sync_on_suspend)
     return DEFAULTS.sync_on_suspend
   end
   return value
@@ -126,10 +126,10 @@ function KoInsightSettings:toggleSyncOnSuspend()
   if success then
     local message = new_value and _("Sync on suspend enabled") or _("Sync on suspend disabled")
     UIManager:show(InfoMessage:new({ text = message, timeout = 2 }))
-    logger.info("[KoInsight] Sync on suspend toggled from", current, "to", new_value)
+    logger.info("[Leituras] Sync on suspend toggled from", current, "to", new_value)
   else
     UIManager:show(InfoMessage:new({ text = _("Error toggling sync setting"), timeout = 3 }))
-    logger.err("[KoInsight] Failed to toggle sync_on_suspend")
+    logger.err("[Leituras] Failed to toggle sync_on_suspend")
   end
 
   return success
@@ -139,7 +139,7 @@ function KoInsightSettings:getAggressiveSuspendEnabled()
   local value = self.data.aggressive_suspend_sync
   if value == nil then
     logger.dbg(
-      "[KoInsight] aggressive_suspend_sync not set, using default:",
+      "[Leituras] aggressive_suspend_sync not set, using default:",
       DEFAULTS.aggressive_suspend_sync
     )
     return DEFAULTS.aggressive_suspend_sync
@@ -158,12 +158,12 @@ function KoInsightSettings:toggleAggressiveSuspend()
     local message = new_value and _("Aggressive suspend sync enabled")
       or _("Aggressive suspend sync disabled")
     UIManager:show(InfoMessage:new({ text = message, timeout = 2 }))
-    logger.info("[KoInsight] Aggressive suspend sync toggled from", current, "to", new_value)
+    logger.info("[Leituras] Aggressive suspend sync toggled from", current, "to", new_value)
   else
     UIManager:show(
       InfoMessage:new({ text = _("Error toggling aggressive sync setting"), timeout = 3 })
     )
-    logger.err("[KoInsight] Failed to toggle aggressive_suspend_sync")
+    logger.err("[Leituras] Failed to toggle aggressive_suspend_sync")
   end
 
   return success
@@ -174,7 +174,7 @@ function KoInsightSettings:getSuspendConnectTimeout()
   -- if it's an actual number, not nan
   if not (t and t == t) then
     logger.dbg(
-      "[KoInsight] suspend_connect_timeout_s not valid, using default:",
+      "[Leituras] suspend_connect_timeout_s not valid, using default:",
       DEFAULTS.suspend_connect_timeout_s
     )
     return DEFAULTS.suspend_connect_timeout_s
@@ -185,7 +185,7 @@ function KoInsightSettings:setSuspendConnectTimeout(sec)
   local t = tonumber(sec)
   -- if it's an actual number, not nan
   if not (t and t == t) then
-    logger.warn("[KoInsight] Invalid timeout value, using default:", sec)
+    logger.warn("[Leituras] Invalid timeout value, using default:", sec)
     t = DEFAULTS.suspend_connect_timeout_s
   end
   t = clamp(t, 3, 60)

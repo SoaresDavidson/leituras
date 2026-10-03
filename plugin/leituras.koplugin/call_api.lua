@@ -9,7 +9,7 @@ local InfoMessage = require("ui/widget/infomessage")
 local _ = require("gettext")
 
 local function response_not_valid(content)
-  logger.err("[KoInsight] callApi: response was not valid JSON", content)
+  logger.err("[Leituras] callApi: response was not valid JSON", content)
   UIManager:show(InfoMessage:new({
     text = _("Server response is not valid."),
   }))
@@ -33,14 +33,14 @@ return function(method, url, headers, body, filepath, quiet)
     request.source = ltn12.source.string(body)
   end
 
-  logger.dbg("[KoInsight] callApi:", request.method, request.url)
+  logger.dbg("[Leituras] callApi:", request.method, request.url)
 
   local code, resp_headers, status = socket.skip(1, http.request(request))
   socketutil:reset_timeout()
 
   -- Raise error if network is unavailable
   if resp_headers == nil then
-    logger.err("[KoInsight] callApi: network error", status or code)
+    logger.err("[Leituras] callApi: network error", status or code)
     return false, "network_error"
   end
 
@@ -65,7 +65,7 @@ return function(method, url, headers, body, filepath, quiet)
     -- The server answers errors as JSON { error = "..." }; show it so e.g. a wrong token is visible
     local decoded_ok, error_body = pcall(JSON.decode, table.concat(sink))
     local server_error = decoded_ok and type(error_body) == "table" and error_body.error or nil
-    logger.err("[KoInsight] callApi: HTTP error", status or code, resp_headers, server_error)
+    logger.err("[Leituras] callApi: HTTP error", status or code, resp_headers, server_error)
     if not quiet then
       UIManager:show(InfoMessage:new({
         text = _("Server error") .. (server_error and (": " .. tostring(server_error)) or ""),

@@ -27,7 +27,7 @@ end
 local function render_response_message(response, prefix, default_text)
   local text = prefix .. " " .. default_text
   if response ~= nil and response["message"] ~= nil then
-    logger.dbg("[KoInsight] API message received: ", JSON.encode(response))
+    logger.dbg("[Leituras] API message received: ", JSON.encode(response))
     text = prefix .. " " .. response["message"]
   end
 
@@ -64,7 +64,7 @@ local function send_statistics_data(server_url, silent)
   end
 
   if annotation_count > 0 then
-    logger.info("[KoInsight] Syncing", annotation_count, "annotations")
+    logger.info("[Leituras] Syncing", annotation_count, "annotations")
   end
 
   local body = {
@@ -115,7 +115,7 @@ local function send_book_annotations(server_url, book_md5, annotations, total_pa
   -- If we don't send book data, annotation insert will fail
   if not book_to_send then
     logger.err(
-      "[KoInsight] Cannot sync annotations for book " .. book_md5 .. ": no book metadata available"
+      "[Leituras] Cannot sync annotations for book " .. book_md5 .. ": no book metadata available"
     )
     return false, { error = "No book metadata available" }
   end
@@ -138,13 +138,13 @@ end
 
 -- Bulk sync all books with annotations
 local function bulk_sync_all_books(server_url, progress_callback)
-  logger.info("[KoInsight] Starting bulk sync of all books")
+  logger.info("[Leituras] Starting bulk sync of all books")
 
   -- Get all books with annotations from reading history
   local books_with_annotations = KoInsightAnnotationReader.getAllBooksWithAnnotations()
 
   if #books_with_annotations == 0 then
-    logger.info("[KoInsight] No books with annotations found")
+    logger.info("[Leituras] No books with annotations found")
     if progress_callback then
       progress_callback({
         phase = "complete",
@@ -157,7 +157,7 @@ local function bulk_sync_all_books(server_url, progress_callback)
     return
   end
 
-  logger.info("[KoInsight] Found", #books_with_annotations, "books to sync")
+  logger.info("[Leituras] Found", #books_with_annotations, "books to sync")
 
   local total_books = #books_with_annotations
   local success_count = 0
@@ -167,7 +167,7 @@ local function bulk_sync_all_books(server_url, progress_callback)
   for i, book_info in ipairs(books_with_annotations) do
     logger.info(
       string.format(
-        "[KoInsight] Syncing book %d/%d (MD5: %s, %d annotations)",
+        "[Leituras] Syncing book %d/%d (MD5: %s, %d annotations)",
         i,
         total_books,
         book_info.md5,
@@ -197,10 +197,10 @@ local function bulk_sync_all_books(server_url, progress_callback)
 
     if ok then
       success_count = success_count + 1
-      logger.info("[KoInsight] Successfully synced book:", book_info.md5)
+      logger.info("[Leituras] Successfully synced book:", book_info.md5)
     else
       failed_count = failed_count + 1
-      logger.err("[KoInsight] Failed to sync book:", book_info.md5)
+      logger.err("[Leituras] Failed to sync book:", book_info.md5)
     end
 
     -- Small delay between requests to avoid overwhelming the server
@@ -212,7 +212,7 @@ local function bulk_sync_all_books(server_url, progress_callback)
 
   logger.info(
     string.format(
-      "[KoInsight] Bulk sync complete: %d/%d books synced successfully, %d failed",
+      "[Leituras] Bulk sync complete: %d/%d books synced successfully, %d failed",
       success_count,
       total_books,
       failed_count

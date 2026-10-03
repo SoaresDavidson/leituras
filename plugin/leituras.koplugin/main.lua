@@ -101,15 +101,15 @@ end
 
 -- Register sync actions to make them available in gestures
 function koinsight:onDispatcherRegisterActions()
-  Dispatcher:registerAction("koinsight_sync", {
+  Dispatcher:registerAction("leituras_sync", {
     category = "none",
-    event = "KoInsightSync",
-    title = _("KoInsight: Sync all books"),
+    event = "LeiturasSync",
+    title = _("Leituras: Sync all books"),
     general = true,
   })
 end
 
-function koinsight:onKoInsightSync()
+function koinsight:onLeiturasSync()
   self:performFullSync()
 end
 
@@ -170,7 +170,7 @@ function koinsight:performFullSync()
 
     if not ok then
       UIManager:close(progress_info)
-      logger.err("[KoInsight] Full sync failed: " .. tostring(err))
+      logger.err("[Leituras] Full sync failed: " .. tostring(err))
       UIManager:show(InfoMessage:new({ text = _("Sync failed: " .. tostring(err)), timeout = 5 }))
     end
   end)
@@ -179,11 +179,11 @@ end
 -- Sync when device suspends
 function koinsight:onSuspend()
   if not self.koinsight_settings:getSyncOnSuspendEnabled() then
-    logger.dbg("[KoInsight] Sync on suspend is disabled, skipping")
+    logger.dbg("[Leituras] Sync on suspend is disabled, skipping")
     return
   end
 
-  logger.info("[KoInsight] Device suspending - syncing data")
+  logger.info("[Leituras] Device suspending - syncing data")
 
   -- This is the main pathway for suspend sync: if the user enabled aggressive mode,
   -- then do that (enable WiFi then sync then restore original WiFi state), otherwise
@@ -200,7 +200,7 @@ function koinsight:onPowerOff()
     return
   end
 
-  logger.info("[KoInsight] Device powering off - syncing data")
+  logger.info("[Leituras] Device powering off - syncing data")
 
   if self.koinsight_settings:getAggressiveSuspendEnabled() then
     self:performAggressiveSyncOnSuspend()
@@ -214,7 +214,7 @@ function koinsight:onReboot()
     return
   end
 
-  logger.info("[KoInsight] Device rebooting - syncing data")
+  logger.info("[Leituras] Device rebooting - syncing data")
 
   if self.koinsight_settings:getAggressiveSuspendEnabled() then
     self:performAggressiveSyncOnSuspend()
@@ -228,13 +228,13 @@ function koinsight:performSyncOnSuspend()
   -- Check if we have a server URL configured
   local server_url = self.koinsight_settings:getServerURL()
   if not server_url or server_url == "" then
-    logger.info("[KoInsight] No server URL configured, skipping sync on suspend")
+    logger.info("[Leituras] No server URL configured, skipping sync on suspend")
     return
   end
 
   -- Check WiFi connectivity before attempting sync
   if not self:isWiFiConnected() then
-    logger.info("[KoInsight] WiFi not connected, skipping sync on suspend")
+    logger.info("[Leituras] WiFi not connected, skipping sync on suspend")
     return
   end
 
@@ -245,12 +245,12 @@ function koinsight:performSyncOnSuspend()
 
   if not success then
     local message = "Error during auto sync: " .. tostring(error_msg)
-    logger.err("[KoInsight] " .. message)
+    logger.err("[Leituras] " .. message)
     UIManager:show(InfoMessage:new({
       text = _(message),
     }))
   else
-    logger.info("[KoInsight] Suspend sync completed successfully")
+    logger.info("[Leituras] Suspend sync completed successfully")
   end
 end
 
@@ -259,7 +259,7 @@ function koinsight:performAggressiveSyncOnSuspend()
   -- Check if we have a server URL configured
   local server_url = self.koinsight_settings:getServerURL()
   if not server_url or server_url == "" then
-    logger.info("[KoInsight] No server URL configured, skipping aggressive sync on suspend")
+    logger.info("[Leituras] No server URL configured, skipping aggressive sync on suspend")
     return
   end
 
@@ -268,12 +268,12 @@ function koinsight:performAggressiveSyncOnSuspend()
     local was_wifi_on = NetworkMgr:isWifiOn()
 
     logger.info(
-      "[KoInsight] Starting aggressive sync (WiFi was " .. (was_wifi_on and "on" or "off") .. ")"
+      "[Leituras] Starting aggressive sync (WiFi was " .. (was_wifi_on and "on" or "off") .. ")"
     )
 
     -- Turn on WiFi if it's not already on
     if not was_wifi_on then
-      logger.info("[KoInsight] Turning on WiFi for sync")
+      logger.info("[Leituras] Turning on WiFi for sync")
       NetworkMgr:turnOnWifi()
 
       -- Wait for WiFi to connect with timeout
@@ -284,7 +284,7 @@ function koinsight:performAggressiveSyncOnSuspend()
       while os.time() - start_time < timeout do
         if NetworkMgr:isConnected() then
           connected = true
-          logger.info("[KoInsight] WiFi connected after " .. (os.time() - start_time) .. " seconds")
+          logger.info("[Leituras] WiFi connected after " .. (os.time() - start_time) .. " seconds")
           break
         end
         -- Small delay to avoid busy waiting
@@ -292,33 +292,33 @@ function koinsight:performAggressiveSyncOnSuspend()
       end
 
       if not connected then
-        logger.warn("[KoInsight] WiFi connection timeout after " .. timeout .. " seconds")
+        logger.warn("[Leituras] WiFi connection timeout after " .. timeout .. " seconds")
         -- Try to sync anyway, might still work
       end
     end
 
     -- Perform the actual sync
-    logger.info("[KoInsight] Performing sync")
+    logger.info("[Leituras] Performing sync")
     KoInsightUpload.syncCurrentBook(server_url, true) -- true = silent mode
 
     -- Turn off WiFi if we turned it on
     if not was_wifi_on then
-      logger.info("[KoInsight] Turning off WiFi after sync")
+      logger.info("[Leituras] Turning off WiFi after sync")
       NetworkMgr:turnOffWifi()
     end
 
-    logger.info("[KoInsight] Aggressive sync completed successfully")
+    logger.info("[Leituras] Aggressive sync completed successfully")
   end)
 
   if not success then
     local message = "Error during aggressive auto sync: " .. tostring(error_msg)
-    logger.err("[KoInsight] " .. message)
+    logger.err("[Leituras] " .. message)
 
     -- Try to restore WiFi state in case of error
     pcall(function()
       local NetworkMgr = require("ui/network/manager")
       if NetworkMgr:isWifiOn() then
-        logger.info("[KoInsight] Cleaning up: turning off WiFi after error")
+        logger.info("[Leituras] Cleaning up: turning off WiFi after error")
         NetworkMgr:turnOffWifi()
       end
     end)
@@ -337,12 +337,12 @@ function koinsight:isWiFiConnected()
   end)
 
   if not success then
-    logger.err("[KoInsight] Error checking WiFi status:", result)
+    logger.err("[Leituras] Error checking WiFi status:", result)
     -- If we can't check WiFi status, assume it's not available rather than syncing blind
     return false
   end
 
-  logger.dbg("[KoInsight] WiFi status - On:", result and "true" or "false")
+  logger.dbg("[Leituras] WiFi status - On:", result and "true" or "false")
   return result
 end
 function koinsight:initMenuOrder()
@@ -362,7 +362,7 @@ function koinsight:initMenuOrder()
         end
       end
       table.insert(menu_order.tools, pos, "leituras")
-      logger.info("[KoInsight] Added to menu order using module: " .. module_name)
+      logger.info("[Leituras] Added to menu order using module: " .. module_name)
     end
   end
 end

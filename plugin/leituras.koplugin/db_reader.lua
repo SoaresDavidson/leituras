@@ -41,7 +41,7 @@ function KoInsightDbReader.getCurrentDocumentPages(book_md5)
       local page_count = ui.document:getPageCount()
       logger.info(
         string.format(
-          "[KoInsight] Using live page count for book %s: %d",
+          "[Leituras] Using live page count for book %s: %d",
           doc_props.title,
           page_count
         )
@@ -71,7 +71,7 @@ function KoInsightDbReader.bookData()
     if current_pages and current_pages ~= db_pages then
       logger.info(
         string.format(
-          "[KoInsight] Using live page count for book %s: %d (DB has: %d)",
+          "[Leituras] Using live page count for book %s: %d (DB has: %d)",
           result[2][i],
           current_pages,
           db_pages
@@ -116,9 +116,9 @@ local function flush_statistics_to_db()
   if ui and ui.statistics and ui.statistics.is_doc then
     local ok_flush, err = pcall(function() ui.statistics:insertDB() end)
     if ok_flush then
-      logger.info("[KoInsight] Flushed statistics to DB before sync")
+      logger.info("[Leituras] Flushed statistics to DB before sync")
     else
-      logger.warn("[KoInsight] Failed to flush statistics to DB: " .. tostring(err))
+      logger.warn("[Leituras] Failed to flush statistics to DB: " .. tostring(err))
     end
   end
 end
@@ -138,7 +138,7 @@ function KoInsightDbReader.progressData()
     local book_md5 = get_md5_by_id(book_data, book_id)
 
     if book_md5 == nil then
-      logger.warn("[KoInsight] Book MD5 not found in book data:" .. book_id)
+      logger.warn("[Leituras] Book MD5 not found in book data:" .. book_id)
       goto continue
     end
 

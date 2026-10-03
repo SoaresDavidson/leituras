@@ -59,11 +59,11 @@ function KoInsightAnnotationReader.getCurrentBookAnnotations()
   local current_doc = KoInsightAnnotationReader.getCurrentDocument()
 
   if not current_doc then
-    logger.dbg("[KoInsight] No document currently open")
+    logger.dbg("[Leituras] No document currently open")
     return nil
   end
 
-  logger.dbg("[KoInsight] Reading annotations for:", current_doc)
+  logger.dbg("[Leituras] Reading annotations for:", current_doc)
 
   -- Force flush any in-memory changes to disk before reading
   -- Otherwise changes are not reflected
@@ -72,7 +72,7 @@ function KoInsightAnnotationReader.getCurrentBookAnnotations()
   -- If we are inside the reader, ui.doc_settings is the freshest source (in-memory).
   -- We flush to ensure sidecar on disk is up-to-date for other codepaths.
   if ui and ui.doc_settings then
-    logger.dbg("[KoInsight] Flushing doc settings to disk")
+    logger.dbg("[Leituras] Flushing doc settings to disk")
     ui.doc_settings:flush()
   end
 
@@ -80,13 +80,13 @@ function KoInsightAnnotationReader.getCurrentBookAnnotations()
   -- Fall back to read-only sidecar open (outside reader withouth live settings)
   local doc_settings = (ui and ui.doc_settings) or open_sidecar_readonly(current_doc)
   if not doc_settings then
-    logger.dbg("[KoInsight] No doc settings found for:", current_doc)
+    logger.dbg("[Leituras] No doc settings found for:", current_doc)
     return nil
   end
 
   local annotations = doc_settings:readSetting("annotations")
   if not annotations then
-    logger.dbg("[KoInsight] No annotations found in doc settings")
+    logger.dbg("[Leituras] No annotations found in doc settings")
     return nil
   end
 
@@ -98,13 +98,13 @@ function KoInsightAnnotationReader.getCurrentBookAnnotations()
   local total_pages = nil
   if ui and ui.document then
     total_pages = ui.document:getPageCount()
-    logger.dbg("[KoInsight] Document has", total_pages, "total pages")
+    logger.dbg("[Leituras] Document has", total_pages, "total pages")
   else
     -- Fallback for outside of reader, where we have no live ui.document
     total_pages = doc_settings:readSetting("doc_pages")
   end
 
-  logger.info("[KoInsight] Found", #annotations, "annotations for current book")
+  logger.info("[Leituras] Found", #annotations, "annotations for current book")
   return annotations, total_pages
 end
 
@@ -117,7 +117,7 @@ function KoInsightAnnotationReader.getAnnotationsByBook()
   local current_annotations, total_pages = KoInsightAnnotationReader.getCurrentBookAnnotations()
 
   if not current_annotations or #current_annotations == 0 then
-    logger.dbg("[KoInsight] No annotations to sync")
+    logger.dbg("[Leituras] No annotations to sync")
     return annotations_by_book
   end
 
@@ -125,7 +125,7 @@ function KoInsightAnnotationReader.getAnnotationsByBook()
   local book_md5 = KoInsightAnnotationReader.getCurrentBookMd5()
 
   if not book_md5 then
-    logger.warn("[KoInsight] Could not determine MD5 for current book, skipping annotations")
+    logger.warn("[Leituras] Could not determine MD5 for current book, skipping annotations")
     return annotations_by_book
   end
 
@@ -134,7 +134,7 @@ function KoInsightAnnotationReader.getAnnotationsByBook()
     KoInsightAnnotationReader.cleanAnnotations(current_annotations, total_pages)
 
   annotations_by_book[book_md5] = cleaned_annotations
-  logger.info("[KoInsight] Prepared", #cleaned_annotations, "annotations for book", book_md5)
+  logger.info("[Leituras] Prepared", #cleaned_annotations, "annotations for book", book_md5)
 
   return annotations_by_book
 end
@@ -194,7 +194,7 @@ function KoInsightAnnotationReader.getBookDataFromSidecar(file_path)
   -- Get MD5
   local md5 = doc_settings:readSetting("partial_md5_checksum")
   if not md5 then
-    logger.warn("[KoInsight] No MD5 found in sidecar for:", file_path)
+    logger.warn("[Leituras] No MD5 found in sidecar for:", file_path)
     return nil
   end
 
@@ -224,29 +224,29 @@ end
 -- Get annotations for a specific book file path
 function KoInsightAnnotationReader.getAnnotationsForBook(file_path)
   if not file_path then
-    logger.warn("[KoInsight] No file path provided")
+    logger.warn("[Leituras] No file path provided")
     return nil, nil
   end
 
-  logger.dbg("[KoInsight] Reading annotations for:", file_path)
+  logger.dbg("[Leituras] Reading annotations for:", file_path)
 
   -- Read-only sidecar open: avoids unintended writes during bulk reads
   local doc_settings = open_sidecar_readonly(file_path)
   if not doc_settings then
-    logger.dbg("[KoInsight] No doc settings found for:", file_path)
+    logger.dbg("[Leituras] No doc settings found for:", file_path)
     return nil, nil
   end
 
   local annotations = doc_settings:readSetting("annotations")
   if not annotations or #annotations == 0 then
-    logger.dbg("[KoInsight] No annotations found in doc settings")
+    logger.dbg("[Leituras] No annotations found in doc settings")
     return nil, nil
   end
 
   -- Try to get total pages from doc settings (stored per-book)
   local total_pages = doc_settings:readSetting("doc_pages")
 
-  logger.info("[KoInsight] Found", #annotations, "annotations for:", file_path)
+  logger.info("[Leituras] Found", #annotations, "annotations for:", file_path)
   return annotations, total_pages
 end
 
@@ -266,9 +266,9 @@ function KoInsightAnnotationReader.getMd5ForPath(file_path)
   local md5 = doc_settings:readSetting("partial_md5_checksum")
 
   if md5 then
-    logger.dbg("[KoInsight] Found MD5 in sidecar:", md5)
+    logger.dbg("[Leituras] Found MD5 in sidecar:", md5)
   else
-    logger.warn("[KoInsight] No MD5 checksum found in sidecar for:", file_path)
+    logger.warn("[Leituras] No MD5 checksum found in sidecar for:", file_path)
   end
 
   return md5
@@ -278,23 +278,23 @@ end
 function KoInsightAnnotationReader.getAllBooksWithAnnotations()
   local ReadHistory = require("readhistory")
 
-  logger.info("[KoInsight] Starting bulk annotation collection from reading history")
+  logger.info("[Leituras] Starting bulk annotation collection from reading history")
 
   -- Force flush currently open book settings to disk first
   -- Only needed if the user is currently in a book, other books should already
   -- have been flushed settings
   local ui = get_live_ui()
   if ui and ui.doc_settings then
-    logger.dbg("[KoInsight] Flushing currently open book's doc settings to disk")
+    logger.dbg("[Leituras] Flushing currently open book's doc settings to disk")
     ui.doc_settings:flush()
   end
 
   if not ReadHistory.hist or #ReadHistory.hist == 0 then
-    logger.info("[KoInsight] No books found in reading history")
+    logger.info("[Leituras] No books found in reading history")
     return {}
   end
 
-  logger.info("[KoInsight] Found", #ReadHistory.hist, "books in reading history")
+  logger.info("[Leituras] Found", #ReadHistory.hist, "books in reading history")
 
   local books_with_annotations = {}
   local processed_count = 0
@@ -317,7 +317,7 @@ function KoInsightAnnotationReader.getAllBooksWithAnnotations()
       pcall(KoInsightAnnotationReader.getBookDataFromSidecar, file_path)
 
     if not success then
-      logger.warn("[KoInsight] Error reading sidecar for:", file_path)
+      logger.warn("[Leituras] Error reading sidecar for:", file_path)
       error_count = error_count + 1
       goto continue
     end
@@ -336,14 +336,14 @@ function KoInsightAnnotationReader.getAllBooksWithAnnotations()
       annotation_count = #annotations,
       book_metadata = book_metadata,
     })
-    logger.info("[KoInsight] Collected", #annotations, "annotations for:", book_metadata.title)
+    logger.info("[Leituras] Collected", #annotations, "annotations for:", book_metadata.title)
 
     ::continue::
   end
 
   logger.info(
     string.format(
-      "[KoInsight] Bulk collection complete: %d books processed, %d with annotations, %d skipped, %d errors",
+      "[Leituras] Bulk collection complete: %d books processed, %d with annotations, %d skipped, %d errors",
       processed_count,
       #books_with_annotations,
       skipped_count,
