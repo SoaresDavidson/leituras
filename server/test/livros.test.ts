@@ -76,6 +76,22 @@ describe('excluir livro', () => {
     await agent.delete('/api/livros/nada').expect(404);
   });
 
+  it('drops stats-only payloads for a blacklisted md5', async () => {
+    await sendImport({ books: [mkBook('a1')], stats: pageStats('a1', 3) }).expect(200);
+    const agent = await login();
+    await agent.delete('/api/livros/a1').expect(200);
+    await sendImport({ stats: pageStats('a1', 5) }).expect(200);
+    expect(count('page_stat')).toBe(0);
+    expect(count('book')).toBe(0);
+  });
+
+  it('rejects import payloads whose items are not objects', async () => {
+    await sendImport({ books: [null], stats: [] }).expect(400);
+    await sendImport({ books: [], stats: ['x'] }).expect(400);
+    await sendImport({ books: [mkBook('a1'), 3], stats: [] }).expect(400);
+    expect(count('book')).toBe(0);
+  });
+
   it('silently skips blacklisted books and stats on import', async () => {
     await sendImport({ books: [mkBook('a1')], stats: pageStats('a1', 3) }).expect(200);
     const agent = await login();
@@ -189,12 +205,43 @@ describe('metadados', () => {
     expect((await agent.get('/api/books/a1').expect(200)).body).toMatchObject({ authors: 'F. Herbert', pages: 400 });
   });
 
+  it('lets the user override a page count the plugin already set', async () => {
+    await sendImport({ books: [mkBook('a1', { pages: 10 })], stats: [] }).expect(200);
+    const agent = await login();
+    await agent.post('/api/livros/a1/metadados').send({ pages: 320 }).expect(200);
+    expect((await agent.get('/api/books/a1').expect(200)).body.pages).toBe(320);
+  });
+
+  it('drops malformed fields from an odd Open Library response instead of failing', async () => {
+    await sendImport({ books: [mkBook('a1')], stats: [] }).expect(200);
+    fetchImpl = async () => Response.json({
+      docs: [{ title: 42, author_name: 'Frank Herbert', number_of_pages_median: -3, first_publish_year: 1965.5, subject: { a: 1 } }],
+    });
+    const agent = await login();
+    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body.resultado)
+      .toEqual({ titulo: '', autores: '', paginas: null, anoPublicacao: null, assuntos: [] });
+
+    fetchImpl = async () => Response.json({
+      docs: [{ title: 'Duna', author_name: ['Frank Herbert', 7, ''], number_of_pages_median: 412, first_publish_year: 0, subject: ['Política', null] }],
+    });
+    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body.resultado)
+      .toEqual({ titulo: 'Duna', autores: 'Frank Herbert', paginas: 412, anoPublicacao: null, assuntos: ['Política'] });
+
+    fetchImpl = async () => Response.json({ docs: 'nope' });
+    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body).toEqual({ resultado: null });
+  });
+
   it('rejects invalid metadata patches', async () => {
     await sendImport({ books: [mkBook('a1')], stats: [] }).expect(200);
     const agent = await login();
     for (const body of [{}, { authors: '' }, { pages: 0 }, { pages: '10' }, { anoPublicacao: 1.5 }, { assuntos: 'x' }, { assuntos: [1] }]) {
       await agent.post('/api/livros/a1/metadados').send(body).expect(400);
     }
+    const many = Array.from({ length: 51 }, (_, i) => `assunto ${i}`);
+    await agent.post('/api/livros/a1/metadados').send({ assuntos: many }).expect(400);
+    await agent.post('/api/livros/a1/metadados').send({ assuntos: ['x'.repeat(201)] }).expect(400);
+    await agent.post('/api/livros/a1/metadados').send({ assuntos: [...many.slice(0, 50)], authors: 'A' }).expect(200);
+    await agent.post('/api/livros/a1/metadados').send({ assuntos: ['x'.repeat(200)] }).expect(200);
     await agent.post('/api/livros/zz/metadados').send({ anoPublicacao: 2000 }).expect(404);
   });
 });

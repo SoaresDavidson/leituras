@@ -6,6 +6,8 @@ import type { Db } from './db';
 
 const METADATA_TIMEOUT_MS = 8000;
 const MAX_ASSUNTOS = 8;
+const MAX_ASSUNTOS_PATCH = 50;
+const MAX_ASSUNTO_LEN = 200;
 
 const bookExists = (db: Db, md5: string) => db.prepare('SELECT 1 FROM book WHERE md5 = ?').get(md5) !== undefined;
 
@@ -36,12 +38,14 @@ export function setMaisTarde(db: Db, md5: string, maisTarde: boolean, today: str
 
 // Deletes the book (stats, fila and mais_tarde cascade) and blacklists its md5 so imports skip it
 export async function deleteBook(db: Db, md5: string, today: string, dataPath: string): Promise<boolean> {
-  const book = db.prepare('SELECT title, authors FROM book WHERE md5 = ?').get(md5) as { title: string; authors: string } | undefined;
-  if (!book) return false;
-  db.transaction(() => {
+  const deleted = db.transaction(() => {
+    const book = db.prepare('SELECT title, authors FROM book WHERE md5 = ?').get(md5) as { title: string; authors: string } | undefined;
+    if (!book) return false;
     db.prepare('INSERT OR REPLACE INTO blacklist (md5, title, authors, excluido_em) VALUES (?, ?, ?, ?)').run(md5, book.title, book.authors, today);
     db.prepare('DELETE FROM book WHERE md5 = ?').run(md5);
+    return true;
   })();
+  if (!deleted) return false;
   await rm(coverPath(dataPath, md5), { force: true }).catch(() => {});
   return true;
 }
@@ -50,19 +54,18 @@ export function removeFromBlacklist(db: Db, md5: string): boolean {
   return db.prepare('DELETE FROM blacklist WHERE md5 = ?').run(md5).changes > 0;
 }
 
-export function dropBlacklisted(db: Db, books: PluginBook[], stats: PluginPageStat[]): { books: PluginBook[]; stats: PluginPageStat[] } {
+const isObject = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+// Returns null when an item is not an object (the route answers 400)
+export function dropBlacklisted(db: Db, books: PluginBook[], stats: PluginPageStat[]): { books: PluginBook[]; stats: PluginPageStat[] } | null {
+  if (!books.every(isObject) || !stats.every(isObject)) return null;
   const blocked = new Set((db.prepare('SELECT md5 FROM blacklist').all() as { md5: string }[]).map((r) => r.md5));
   if (blocked.size === 0) return { books, stats };
   return { books: books.filter((b) => !blocked.has(b.md5)), stats: stats.filter((s) => !blocked.has(s.book_md5)) };
 }
 
-type SearchDoc = {
-  title?: string;
-  author_name?: string[];
-  number_of_pages_median?: number;
-  first_publish_year?: number;
-  subject?: string[];
-};
+const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim() !== '') : []);
+const positiveInt = (v: unknown) => (Number.isInteger(v) && (v as number) > 0 ? (v as number) : null);
 
 // Open Library lookup by title and first author; throws on network error, timeout or non-2xx
 export async function fetchMetadados(db: Db, md5: string, fetchFn: typeof fetch = fetch): Promise<Metadados | null | undefined> {
@@ -76,14 +79,17 @@ export async function fetchMetadados(db: Db, md5: string, fetchFn: typeof fetch 
   if (book.authors) params.set('author', book.authors.split('\n')[0]);
   const res = await fetchFn(`https://openlibrary.org/search.json?${params}`, { signal: AbortSignal.timeout(METADATA_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`Open Library HTTP ${res.status}`);
-  const doc = ((await res.json()) as { docs?: SearchDoc[] }).docs?.[0];
-  if (!doc) return null;
+  // Malformed fields are dropped, never trusted
+  const docs = ((await res.json()) as { docs?: unknown } | null)?.docs;
+  const doc = Array.isArray(docs) ? docs[0] : undefined;
+  if (!isObject(doc)) return null;
+  const d = doc as Record<string, unknown>;
   return {
-    titulo: doc.title ?? '',
-    autores: (doc.author_name ?? []).join('\n'),
-    paginas: doc.number_of_pages_median ?? null,
-    anoPublicacao: doc.first_publish_year ?? null,
-    assuntos: (doc.subject ?? []).slice(0, MAX_ASSUNTOS),
+    titulo: typeof d.title === 'string' ? d.title : '',
+    autores: strings(d.author_name).join('\n'),
+    paginas: positiveInt(d.number_of_pages_median),
+    anoPublicacao: positiveInt(d.first_publish_year),
+    assuntos: strings(d.subject).slice(0, MAX_ASSUNTOS),
   };
 }
 
@@ -100,7 +106,8 @@ export function parseMetadadosPatch(body: unknown): MetadadosPatch | null {
   if (pages !== undefined) { if (!isIntIn(pages, 1, 100_000)) return null; patch.pages = pages as number; }
   if (anoPublicacao !== undefined) { if (!isIntIn(anoPublicacao, 1, 9999)) return null; patch.anoPublicacao = anoPublicacao as number; }
   if (assuntos !== undefined) {
-    if (!Array.isArray(assuntos) || !assuntos.every((a) => typeof a === 'string')) return null;
+    if (!Array.isArray(assuntos) || assuntos.length > MAX_ASSUNTOS_PATCH) return null;
+    if (!assuntos.every((a) => typeof a === 'string' && a.length <= MAX_ASSUNTO_LEN)) return null;
     patch.assuntos = assuntos;
   }
   return Object.keys(patch).length === 0 ? null : patch;

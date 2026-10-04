@@ -23,7 +23,9 @@ nunca sai do banco. Esta entrega traz:
 | Confirmação | Confirmação em linha (botão vira "Excluir de vez?" + "Cancelar"), sem `window.confirm` | Funciona igual no celular e no teclado |
 | Fonte dos metadados | Open Library `search.json`, a mesma de `covers.ts`, por título e primeiro autor | Sem chave de API, já usada no projeto |
 | Busca de metadados | Só sob demanda (botão "Buscar metadados"), no servidor, timeout de 8 s; falha devolve 502 com mensagem | Nada de rede na importação; o navegador não fala com terceiros |
-| Aplicar metadados | O usuário marca quais campos aplicar: autores, páginas (só oferecido quando o livro tem 0), ano e assuntos (acrescentados aos tópicos, sem repetir linha) | O usuário decide; nada é sobrescrito sem escolha |
+| Aplicar metadados | O usuário marca quais campos aplicar: autores, páginas, ano e assuntos (acrescentados aos tópicos, sem repetir linha) | O usuário decide; nada é sobrescrito sem escolha |
+| Páginas já informadas pelo plugin | Podem ser substituídas pelo usuário (oferecidas quando diferem, mas só vêm marcadas quando o livro tem 0) | A contagem do KOReader varia com fonte e margem; o usuário pode preferir a da edição. A próxima sincronização com valor > 0 volta a mandar |
+| Resposta do Open Library | Campos com formato inesperado são descartados (listas que não são arrays, números não inteiros ou ≤ 0); nunca viram 502 | Dado de terceiro não é confiável; resultado parcial ainda é útil |
 | Autores e páginas x plugin | A importação deixa de apagar autores e páginas: valor vazio ou 0 vindo do plugin não sobrescreve o que já existe | Sem isso, o que foi aplicado sumiria na próxima sincronização. Valor não vazio do plugin continua mandando |
 | Ano de publicação | Coluna nova `book.ano_publicacao`, do usuário, a importação não toca | Não existe no KOReader |
 | "Ler mais tarde" x fila | Tabela própria `mais_tarde`, sem ordem e sem limite | A fila do foco é curta, ordenada e ligada ao limite de abertos; "ler mais tarde" é uma estante de desejos que não mexe no foco |
@@ -90,7 +92,10 @@ export type MetadadosPatch = Partial<{ authors: string; pages: number; anoPublic
 | `POST /api/livros/:md5/metadados` | `MetadadosPatch` | `LivroExtras`; 400 para campo inválido |
 
 Validação de `MetadadosPatch`: `authors` string não vazia; `pages` inteiro 1–100000; `anoPublicacao`
-inteiro 1–9999; `assuntos` array de strings (vazias ignoradas). Corpo sem nenhum campo é 400.
+inteiro 1–9999; `assuntos` array de no máximo 50 strings de até 200 caracteres (vazias ignoradas; acima do limite é 400,
+sem truncar). Corpo sem nenhum campo é 400.
+
+`POST /api/plugin/import` responde 400 quando algum item de `books` ou `stats` não é objeto.
 
 `createApp` ganha a opção `fetchFn` (padrão `fetch`) para os testes injetarem a resposta do Open Library.
 
@@ -124,13 +129,15 @@ No cliente, toda mutação invalida `['livros']`, `['books']`, `['dashboard']` e
 `server/test/livros.test.ts`, no estilo de `api.test.ts`:
 
 - Excluir apaga livro, `page_stat`, fila e "ler mais tarde", e grava a blacklist; 404 para livro inexistente.
-- Importar de novo um md5 bloqueado não traz livro nem estatísticas; outros livros do mesmo envio entram.
+- Importar de novo um md5 bloqueado não traz livro nem estatísticas, inclusive num envio só de estatísticas;
+  outros livros do mesmo envio entram. Itens que não são objetos dão 400.
 - Remover da blacklist faz o livro voltar na importação seguinte; 404 para md5 fora da blacklist.
 - "Ler mais tarde" liga e desliga, aparece em `GET /api/livros`, recusa corpo inválido e sobrevive à importação.
-- Metadados: com `fetch` simulado, devolve autores, páginas, ano e assuntos; sem resultado devolve `null`;
-  erro de rede devolve 502.
+- Metadados: com `fetch` simulado, devolve autores, páginas, ano e assuntos; resposta com formato estranho
+  devolve só os campos válidos; sem resultado devolve `null`; erro de rede devolve 502.
 - Aplicar metadados grava autores, páginas, ano e acrescenta assuntos aos tópicos sem repetir; recusa
-  corpo inválido; a importação seguinte com autores vazios e 0 páginas não apaga o que foi aplicado.
+  corpo inválido (incluindo mais de 50 assuntos ou assunto com mais de 200 caracteres); páginas substituem
+  um valor já informado pelo plugin; a importação seguinte com autores vazios e 0 páginas não apaga o que foi aplicado.
 - Busca fuzzy (`web/src/fuzzy.ts`, função pura testada pelo vitest do servidor): ignora acento e caixa,
   aceita subsequência, prefere trecho contíguo e título.
 

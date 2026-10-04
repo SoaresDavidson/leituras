@@ -64,6 +64,10 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
       return;
     }
     const allowed = dropBlacklisted(db, books, stats);
+    if (!allowed) {
+      res.status(400).json({ error: 'books and stats items must be objects' });
+      return;
+    }
     importPluginData(db, allowed.books, allowed.stats);
     // Respond first: the plugin runs on suspend and should not wait for Open Library
     res.json({ message: 'Upload successful' });
