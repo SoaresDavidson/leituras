@@ -80,6 +80,15 @@ describe('plugin import', () => {
     expect(res.body).toMatchObject({ title: 'Duna (ed. revisada)', categoria: 'computação', topicos: 'grafos' });
   });
 
+  it('keeps tipo, categoria and status_manual when the book is imported again', async () => {
+    await sendImport({ books: [book], stats: [] }).expect(200);
+    const agent = await login();
+    await agent.patch('/api/books/abc123').send({ tipo: 'ficcao', categoria: 'romance', statusManual: 'pausado' }).expect(200);
+    await sendImport({ books: [{ ...book, title: 'Duna 2' }], stats: pageStats(10) }).expect(200);
+    const res = await agent.get('/api/books/abc123').expect(200);
+    expect(res.body).toMatchObject({ title: 'Duna 2', tipo: 'ficcao', categoria: 'romance', statusManual: 'pausado', status: 'pausado' });
+  });
+
   it('keeps arquivado_em when the book is imported again', async () => {
     await sendImport({ books: [book], stats: [] }).expect(200);
     const agent = await login();
@@ -156,6 +165,26 @@ describe('web api', () => {
     await sendImport({ books: [book], stats: [] }).expect(200);
     const agent = await login();
     await agent.patch('/api/books/abc123').send({ statusManual: 'abandonado' }).expect(400);
+  });
+
+  it('starts without tipo and sets, switches and clears it', async () => {
+    await sendImport({ books: [book], stats: [] }).expect(200);
+    const agent = await login();
+    expect((await agent.get('/api/books/abc123').expect(200)).body.tipo).toBeNull();
+    expect((await agent.get('/api/books').expect(200)).body[0].tipo).toBeNull();
+    expect((await agent.patch('/api/books/abc123').send({ tipo: 'ficcao' }).expect(200)).body.tipo).toBe('ficcao');
+    expect((await agent.get('/api/books').expect(200)).body[0].tipo).toBe('ficcao');
+    expect((await agent.patch('/api/books/abc123').send({ tipo: 'estudo' }).expect(200)).body.tipo).toBe('estudo');
+    expect((await agent.patch('/api/books/abc123').send({ tipo: null }).expect(200)).body.tipo).toBeNull();
+  });
+
+  it('rejects an invalid tipo', async () => {
+    await sendImport({ books: [book], stats: [] }).expect(200);
+    const agent = await login();
+    for (const tipo of ['romance', 'Ficcao', '', 1, true]) {
+      await agent.patch('/api/books/abc123').send({ tipo }).expect(400);
+    }
+    expect((await agent.get('/api/books/abc123')).body.tipo).toBeNull();
   });
 });
 
@@ -397,6 +426,21 @@ describe('aprendizado api', () => {
     await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/nao-existe').send({ md5s: ['abc123'] }).expect(404);
     await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/analise').send({ md5s: ['nao-existe'] }).expect(400);
     await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/analise').send({ md5s: ['abc123', 'abc123'] }).expect(400);
+  });
+
+  it('hides a fiction book from the page and brings it back as estudo, keeping its notes', async () => {
+    await seedBook();
+    const agent = await login();
+    await agent.post('/api/aprendizado/notas').send({ md5: 'abc123', texto: 'x' }).expect(201);
+    await agent.put('/api/aprendizado/trilhas/ia-do-zero/itens/matematica').send({ md5s: ['abc123'] }).expect(200);
+    await agent.patch('/api/books/abc123').send({ tipo: 'ficcao' }).expect(200);
+    expect((await agent.get('/api/aprendizado').expect(200)).body.notas).toEqual([]);
+    await agent.put('/api/aprendizado/trilhas/ia-do-zero/itens/redes-neurais').send({ md5s: ['abc123'] }).expect(400);
+    await agent.patch('/api/books/abc123').send({ tipo: 'estudo' }).expect(200);
+    const back = (await agent.get('/api/aprendizado').expect(200)).body;
+    expect(back.notas).toHaveLength(1);
+    const ia = back.trilhas.find((t: { id: string }) => t.id === 'ia-do-zero');
+    expect(ia.itens.find((i: { id: string }) => i.id === 'matematica').livros).toHaveLength(1);
   });
 
   it('keeps area, notes and trails when the plugin imports again', async () => {

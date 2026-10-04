@@ -1,7 +1,7 @@
 import type { PluginBook, PluginPageStat } from '@leituras/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addNota, deleteNota, getAprendizado, getLivroAprendizado, revisarNota, setArea, setTrilhaItem } from '../src/aprendizado';
-import { importPluginData } from '../src/books';
+import { importPluginData, updateBook } from '../src/books';
 import { addDays, daysBetween } from '../src/dates';
 import { openDb, type Db } from '../src/db';
 
@@ -232,6 +232,61 @@ describe('lacunas', () => {
     seed([mkBook('P', 10)], read('P', 10, '2026-09-01', 1, 2));
     setCol('P', 'area', 'protocolos');
     expect(aprendizado().lacunas.find((l) => l.id === 'NC')).toMatchObject({ minutos: 2, coberta: true });
+  });
+});
+
+describe('livros de ficção', () => {
+  const tipo = (md5: string, t: 'estudo' | 'ficcao' | null) => expect(updateBook(db, md5, { tipo: t }, TODAY)).toBe(true);
+
+  // E = estudo, F = ficção, N = sem classificação (tratado como estudo); all read, with categoria, area and topicos
+  function seedTres() {
+    seed(
+      [mkBook('E', 10), mkBook('F', 10), mkBook('N', 10)],
+      [...read('E', 10, '2026-09-01', 1, 10), ...read('F', 10, '2026-09-02', 1, 10), ...read('N', 10, '2026-09-03', 1, 10)],
+    );
+    for (const m of ['E', 'F', 'N']) {
+      setCol(m, 'categoria', `cat-${m}`);
+      setCol(m, 'topicos', `top-${m}`);
+      setCol(m, 'area', 'grafos');
+      addNota(db, m, `nota ${m}`, '2026-09-01');
+    }
+    expect(setTrilhaItem(db, 'construir-linguagem', 'analise', ['E', 'F', 'N'])).toBe('ok');
+    tipo('E', 'estudo');
+    tipo('F', 'ficcao');
+  }
+
+  it('excludes fiction from notes, reviews and every aggregation; unclassified counts as estudo', () => {
+    seedTres();
+    const a = aprendizado();
+    expect(a.notas.map((n) => n.md5).sort()).toEqual(['E', 'N']);
+    expect(a.revisarHoje.map((n) => n.md5).sort()).toEqual(['E', 'N']);
+    expect(a.ferrugem.map((f) => f.area).sort()).toEqual(['cat-E', 'cat-N']);
+    expect(a.topicos.map((t) => t.topico).sort()).toEqual(['top-E', 'top-N']);
+    const grafos = a.arvore.find((n) => n.id === 'algoritmos')!.filhos.find((f) => f.id === 'grafos')!;
+    expect(grafos).toMatchObject({ minutos: 20, livrosLidos: 2 });
+    expect(a.lacunas.find((l) => l.id === 'AL')!.minutos).toBe(20);
+    const analise = a.trilhas.find((t) => t.id === 'construir-linguagem')!.itens.find((i) => i.id === 'analise')!;
+    expect(analise.livros.map((l) => l.md5).sort()).toEqual(['E', 'N']);
+  });
+
+  it('keeps notes and trail marks of a fiction book and restores them when it goes back to estudo', () => {
+    seedTres();
+    // editing the item from the page only sends the visible books: the fiction mark must survive
+    expect(setTrilhaItem(db, 'construir-linguagem', 'analise', ['E'])).toBe('ok');
+    expect(getLivroAprendizado(db, 'F')!.notas.map((n) => n.texto)).toEqual(['nota F']);
+    tipo('F', 'estudo');
+    const a = aprendizado();
+    expect(a.notas.map((n) => n.md5).sort()).toEqual(['E', 'F', 'N']);
+    const analise = a.trilhas.find((t) => t.id === 'construir-linguagem')!.itens.find((i) => i.id === 'analise')!;
+    expect(analise.livros.map((l) => l.md5).sort()).toEqual(['E', 'F']);
+    expect(a.ferrugem.map((f) => f.area)).toContain('cat-F');
+  });
+
+  it('does not mark a fiction book on a trail item', () => {
+    seedTres();
+    expect(setTrilhaItem(db, 'construir-linguagem', 'interpretador', ['E', 'F'])).toBe('ficcao');
+    const item = aprendizado().trilhas.find((t) => t.id === 'construir-linguagem')!.itens.find((i) => i.id === 'interpretador')!;
+    expect(item.livros).toEqual([]);
   });
 });
 
