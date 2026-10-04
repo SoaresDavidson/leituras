@@ -14,8 +14,8 @@
 
   /* ---- surfaces ---- */
   .card { @apply min-w-0 rounded-xl border border-line bg-surface px-[18px] pt-4 pb-[18px]; }
-  .panel { @apply rounded-lg border border-line bg-surface-2 p-3; }
-  .callout { @apply rounded-lg border border-dashed border-accent/60 bg-accent/10 p-3; }
+  .panel { @apply animate-enter rounded-lg border border-line bg-surface-2 p-3; }
+  .callout { @apply animate-enter rounded-lg border border-dashed border-accent/60 bg-accent/10 p-3; }
   .list-divided { @apply divide-y divide-line; }
 
   /* ---- stats ---- */
@@ -29,17 +29,17 @@
   /* ---- controls ---- */
   .btn {
     @apply inline-flex min-h-[34px] items-center justify-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[12.5px]
-      hover:border-muted hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent
+      transition duration-150 hover:border-muted hover:bg-surface-2 active:scale-[.97] disabled:opacity-40 disabled:hover:bg-transparent
       aria-pressed:border-fg aria-pressed:bg-fg aria-pressed:text-bg;
   }
   .btn-primary {
     @apply inline-flex min-h-[40px] items-center justify-center rounded-[10px] bg-accent px-4 py-2 font-bold text-on-accent
-      hover:bg-accent-hi disabled:opacity-50 disabled:hover:bg-accent;
+      transition duration-150 hover:bg-accent-hi active:scale-[.97] disabled:opacity-50 disabled:hover:bg-accent;
   }
   /* modifier: use as "btn btn-danger" */
   .btn-danger { @apply border-danger text-danger hover:border-danger hover:bg-danger hover:text-bg; }
   .btn-icon {
-    @apply grid size-9 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-fg disabled:opacity-40;
+    @apply grid size-9 place-items-center rounded-lg text-muted transition duration-150 active:scale-90 hover:bg-surface-2 hover:text-fg disabled:opacity-40;
   }
   .input {
     @apply w-full rounded-lg border border-line bg-surface-2 px-3 py-2 placeholder:text-muted focus:border-accent focus:outline-none;
@@ -55,7 +55,24 @@
 
   /* ---- navigation ---- */
   .nav-link {
-    @apply inline-flex min-h-9 items-center rounded-lg px-2.5 py-2 text-[13px] text-fg hover:bg-surface-2
+    @apply inline-flex min-h-9 items-center rounded-lg px-2.5 transition-colors duration-150 py-2 text-[13px] text-fg hover:bg-surface-2
       aria-[current=page]:bg-surface-2 aria-[current=page]:text-accent;
   }
+}
+
+/* ---- motion ---- */
+@keyframes enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@utility animate-enter { animation: enter 180ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:active, .btn-primary:active, .btn-icon:active { transform: none; }
 }
