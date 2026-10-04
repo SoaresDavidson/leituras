@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { getBooks, getDashboard } from '../api';
+import { CHART, tooltipStyle } from '../styles/chart';
 import { MONTHS, fmtHours } from '../format';
 import { Card, Stat } from '../components/Card';
 import Heatmap from '../components/Heatmap';
@@ -19,17 +20,17 @@ export default function DashboardPage() {
   return (
     <>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Painel</h1>
+        <h1 className="page-title">Painel</h1>
         <select value={year} onChange={(e) => setYear(Number(e.target.value))}
-          className="rounded border border-stone-300 bg-transparent px-2 py-1 dark:border-stone-700 dark:bg-stone-900">
+          className="input w-auto">
           {years.map((y) => <option key={y}>{y}</option>)}
         </select>
       </div>
-      {dash.isError && <p className="text-red-600">Erro ao carregar o painel.</p>}
+      {dash.isError && <p className="error">Erro ao carregar o painel.</p>}
       {d && (
         <>
           <FocoPanel foco={d.foco} />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid-3">
             <Stat label="Livros concluídos" value={d.totals.booksFinished} />
             <Stat label="Horas lidas" value={fmtHours(d.totals.minutes)} />
             <Stat label="Páginas" value={d.totals.pages} />
@@ -39,11 +40,11 @@ export default function DashboardPage() {
             <div className="h-56">
               <ResponsiveContainer>
                 <BarChart data={d.finishedPerMonth.map((m) => ({ ...m, label: MONTHS[Number(m.month.slice(5)) - 1] }))}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="label" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Bar dataKey="count" name="Livros" fill="#10b981" radius={[3, 3, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                  <XAxis dataKey="label" tick={{ fill: CHART.axis, fontSize: 11 }} stroke={CHART.grid} />
+                  <YAxis allowDecimals={false} tick={{ fill: CHART.axis, fontSize: 11 }} stroke={CHART.grid} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="count" name="Livros" fill={CHART.main} radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
