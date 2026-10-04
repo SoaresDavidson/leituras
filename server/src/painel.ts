@@ -1,8 +1,14 @@
-import { PAINEL_ITENS, type PainelConfig, type PainelConfigPatch, type PainelItem } from '@leituras/shared';
+import type { PainelConfig, PainelConfigPatch, PainelItem } from '@leituras/shared';
 import type { Db } from './db';
 
 // Dashboard visibility is per instance (one password, one library). A missing row means the item is visible.
 const key = (item: PainelItem) => `painel.${item}`;
+
+// @leituras/shared is type-only at runtime, so the list lives here; the Record makes the compiler
+// flag any item added to or removed from PainelItem
+const PAINEL_ITENS = Object.keys({
+  foco: 1, livrosConcluidos: 1, horas: 1, paginas: 1, atividade: 1, concluidosPorMes: 1, todosLivros: 1,
+} satisfies Record<PainelItem, 1>) as PainelItem[];
 
 export function getPainelConfig(db: Db): PainelConfig {
   const rows = db.prepare("SELECT key, value FROM setting WHERE key LIKE 'painel.%'").all() as { key: string; value: string }[];
