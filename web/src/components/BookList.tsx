@@ -6,16 +6,16 @@ import StatusBadge from './StatusBadge';
 import ProgressBar from './ProgressBar';
 
 export default function BookList<T extends BookSummary>({ books, badge }: { books: T[]; badge?: (book: T) => ReactNode }) {
-  if (books.length === 0) return <p className="text-sm text-stone-500">Nenhum livro.</p>;
+  if (books.length === 0) return <p className="muted">Nenhum livro.</p>;
   return (
-    <ul className="divide-y divide-stone-200 dark:divide-stone-800">
+    <ul className="list-divided">
       {books.map((b) => (
         <li key={b.md5}>
           <Link to={`/livros/${b.md5}`} className="flex items-center gap-3 py-3 hover:opacity-80">
             <Cover book={b} className="h-16 w-11" />
             <div className="min-w-0 flex-1 space-y-1">
               <div className="truncate font-medium">{b.title}</div>
-              <div className="truncate text-sm text-stone-500 dark:text-stone-400">{b.authors}</div>
+              <div className="truncate muted">{b.authors}</div>
               <ProgressBar value={b.progress} />
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">

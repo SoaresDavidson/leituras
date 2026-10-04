@@ -1,0 +1,61 @@
+/* Class recipes used in more than one place. One-off layouts stay inline as utilities. */
+@layer components {
+  /* ---- type ---- */
+  .page-title { @apply font-mono text-2xl font-bold tracking-tight; }
+  .section-title { @apply font-mono text-[13px] font-bold tracking-[.14em] text-accent uppercase; }
+  .card-title { @apply font-mono text-[15px]/snug font-bold; }
+  .label { @apply font-mono text-[10px] font-semibold tracking-[.12em] text-muted uppercase; }
+  .muted { @apply text-sm text-muted; }
+  .hint { @apply text-xs text-muted; }
+  .num { @apply font-mono tabular-nums; }
+  .error { @apply text-sm text-danger; }
+  .success { @apply text-sm font-medium text-ok; }
+  .link { @apply text-sm text-muted hover:text-fg hover:underline; }
+
+  /* ---- surfaces ---- */
+  .card { @apply min-w-0 rounded-xl border border-line bg-surface px-[18px] pt-4 pb-[18px]; }
+  .panel { @apply rounded-lg border border-line bg-surface-2 p-3; }
+  .callout { @apply rounded-lg border border-dashed border-accent/60 bg-accent/10 p-3; }
+  .list-divided { @apply divide-y divide-line; }
+
+  /* ---- stats ---- */
+  .stat-label { @apply text-xs text-muted; }
+  .stat-value { @apply font-mono text-xl/tight font-bold; }
+
+  /* ---- grids ---- */
+  .grid-2 { @apply grid grid-cols-1 gap-3.5 md:grid-cols-2; }
+  .grid-3 { @apply grid grid-cols-1 gap-3.5 sm:grid-cols-3; }
+
+  /* ---- controls ---- */
+  .btn {
+    @apply inline-flex min-h-[34px] items-center justify-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[12.5px]
+      hover:border-muted hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent
+      aria-pressed:border-fg aria-pressed:bg-fg aria-pressed:text-bg;
+  }
+  .btn-primary {
+    @apply inline-flex min-h-[40px] items-center justify-center rounded-[10px] bg-accent px-4 py-2 font-bold text-on-accent
+      hover:bg-accent-hi disabled:opacity-50 disabled:hover:bg-accent;
+  }
+  /* modifier: use as "btn btn-danger" */
+  .btn-danger { @apply border-danger text-danger hover:border-danger hover:bg-danger hover:text-bg; }
+  .btn-icon {
+    @apply grid size-9 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-fg disabled:opacity-40;
+  }
+  .input {
+    @apply w-full rounded-lg border border-line bg-surface-2 px-3 py-2 placeholder:text-muted focus:border-accent focus:outline-none;
+  }
+  .chip {
+    @apply inline-block rounded-full border border-line bg-surface-2 px-2 py-1 font-mono text-[11px]/none font-semibold whitespace-nowrap;
+  }
+  .tag { @apply inline-block rounded-[5px] border px-[7px] py-[3px] font-mono text-[11px]/none font-semibold whitespace-nowrap; }
+
+  /* ---- progress ---- */
+  .track { @apply h-2 w-full overflow-hidden rounded-full bg-surface-2; }
+  .track-fill { @apply block h-full rounded-full bg-accent transition-[width] duration-500; }
+
+  /* ---- navigation ---- */
+  .nav-link {
+    @apply inline-flex min-h-9 items-center rounded-lg px-2.5 py-2 text-[13px] text-fg hover:bg-surface-2
+      aria-[current=page]:bg-surface-2 aria-[current=page]:text-accent;
+  }
+}
