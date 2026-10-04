@@ -82,6 +82,13 @@ describe('getFoco', () => {
       .toEqual([{ md5: 'P46', diasParado: 46, vencidoHa: 1 }]);
   });
 
+  it('counts days stalled from the last real session, ignoring brief opens', () => {
+    // 5 minutes of reading on 08-18, then a 1-minute peek yesterday
+    seed([mkBook('P', 100)], [...read('P', 100, '2026-08-18', 1, 5), ...read('P', 100, '2026-10-02', 6, 6)]);
+    expect(foco().cemiterio.map((c) => ({ md5: c.book.md5, diasParado: c.diasParado })))
+      .toEqual([{ md5: 'P', diasParado: 46 }]);
+  });
+
   it('forecasts from the last 14 days and returns null without recent reading', () => {
     // one page a day, in a 5-minute session, from 09-20 to 10-03 (14 days), on top of 16 pages read on 09-01
     const days = Array.from({ length: 14 }, (_, i) => new Date(Date.UTC(2026, 8, 20 + i)).toISOString().slice(0, 10));

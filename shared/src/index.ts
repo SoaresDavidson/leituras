@@ -56,7 +56,8 @@ export type BookSummary = {
   tipo: TipoLivro | null; // ficcao hides the book from aprendizado
   startedAt: string | null; // YYYY-MM-DD
   finishedAt: string | null; // YYYY-MM-DD
-  lastReadAt: string | null; // YYYY-MM-DD
+  lastReadAt: string | null; // YYYY-MM-DD, any recorded page
+  lastActiveAt: string | null; // YYYY-MM-DD, last session of real reading (see server stats.ts)
   totalMinutes: number;
   hasCover: boolean;
   arquivado: boolean; // archived and not actively read since (see server stats.ts effectiveStatus)

@@ -45,7 +45,11 @@ export function getFoco(db: Db, year: number, timeZone: string, now = Date.now()
     .map((d) => ({ ...toSummary(d), ...forecast(d, today) }))
     .sort((a, b) => isRetaFinal(b) - isRetaFinal(a) || (b.lastReadAt ?? '').localeCompare(a.lastReadAt ?? ''));
 
-  const diasParado = (b: BookSummary) => (b.lastReadAt == null ? null : daysBetween(b.lastReadAt, today));
+  // brief opens do not restart the count; books never really read fall back to the last open
+  const diasParado = (b: BookSummary) => {
+    const desde = b.lastActiveAt ?? b.lastReadAt;
+    return desde == null ? null : daysBetween(desde, today);
+  };
   const inCemetery = (b: BookSummary) => b.status === 'pausado' && !b.arquivado && (diasParado(b) ?? 0) > prazoDias;
   const cemiterio = [...summaries.values()]
     .filter(inCemetery)

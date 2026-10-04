@@ -83,6 +83,7 @@ function buildDetail(db: Db, row: BookRow, timeZone: string, today: string): Boo
     startedAt: stats.startedAt,
     finishedAt: stats.finishedAt,
     lastReadAt: stats.lastReadAt,
+    lastActiveAt: stats.lastActiveAt,
     totalMinutes: Math.round(stats.totalSeconds / 60),
     hasCover: row.cover_status === 'ok',
     arquivado,
