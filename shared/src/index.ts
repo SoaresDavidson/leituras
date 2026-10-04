@@ -40,6 +40,9 @@ export type PluginImportPayload = {
 
 export type ReadingStatus = 'lendo' | 'lido' | 'pausado';
 
+// null = unclassified, treated as estudo
+export type TipoLivro = 'estudo' | 'ficcao';
+
 export type BookSummary = {
   md5: string;
   title: string;
@@ -50,6 +53,7 @@ export type BookSummary = {
   status: ReadingStatus; // effective status (status_manual wins)
   statusManual: ReadingStatus | null;
   categoria: string;
+  tipo: TipoLivro | null; // ficcao hides the book from aprendizado
   startedAt: string | null; // YYYY-MM-DD
   finishedAt: string | null; // YYYY-MM-DD
   lastReadAt: string | null; // YYYY-MM-DD
@@ -94,6 +98,7 @@ export type BookPatch = Partial<{
   statusManual: ReadingStatus | null;
   topicos: string;
   arquivado: boolean;
+  tipo: TipoLivro | null;
 }>;
 
 // ---- livros ----

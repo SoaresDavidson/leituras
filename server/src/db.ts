@@ -3,7 +3,7 @@ import Database from 'better-sqlite3';
 export type Db = Database.Database;
 
 // Each entry runs once, in order; PRAGMA user_version tracks how many ran.
-const MIGRATIONS = [
+export const MIGRATIONS = [
   `
   CREATE TABLE device (
     id TEXT PRIMARY KEY,
@@ -79,6 +79,10 @@ const MIGRATIONS = [
     md5 TEXT NOT NULL REFERENCES book(md5) ON DELETE CASCADE,
     PRIMARY KEY (trilha, item, md5)
   );
+  `,
+  `
+  -- owned by the user; NULL = unclassified, treated as estudo
+  ALTER TABLE book ADD COLUMN tipo TEXT CHECK (tipo IN ('estudo', 'ficcao'));
   `,
 ];
 

@@ -1,4 +1,4 @@
-import type { BookPatch, HabitoPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus, RetroTipo } from '@leituras/shared';
+import type { BookPatch, HabitoPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus, RetroTipo, TipoLivro } from '@leituras/shared';
 import express, { type Request, type Response } from 'express';
 import { addNota, deleteNota, getAprendizado, getLivroAprendizado, revisarNota, setArea, setTrilhaItem } from './aprendizado';
 import { existsSync } from 'node:fs';
@@ -19,10 +19,11 @@ import { getRetroPeriodo, getRetrospectiva, MAX_OFFSET, updateRetroSettings } fr
 import { getJogo, trocarCarta } from './jogo';
 
 const STATUSES: ReadingStatus[] = ['lendo', 'lido', 'pausado'];
+const TIPOS: TipoLivro[] = ['estudo', 'ficcao'];
 
 function parsePatch(body: unknown): BookPatch | null {
   if (typeof body !== 'object' || body === null) return null;
-  const { categoria, topicos, statusManual, arquivado } = body as Record<string, unknown>;
+  const { categoria, topicos, statusManual, arquivado, tipo } = body as Record<string, unknown>;
   const patch: BookPatch = {};
   if (categoria !== undefined) { if (typeof categoria !== 'string') return null; patch.categoria = categoria.trim(); }
   if (topicos !== undefined) { if (typeof topicos !== 'string') return null; patch.topicos = topicos; }
@@ -31,6 +32,10 @@ function parsePatch(body: unknown): BookPatch | null {
     patch.statusManual = statusManual as ReadingStatus | null;
   }
   if (arquivado !== undefined) { if (typeof arquivado !== 'boolean') return null; patch.arquivado = arquivado; }
+  if (tipo !== undefined) {
+    if (tipo !== null && !TIPOS.includes(tipo as TipoLivro)) return null;
+    patch.tipo = tipo as TipoLivro | null;
+  }
   return patch;
 }
 
@@ -337,6 +342,7 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     if (result === 'not-found') { res.status(404).json({ error: 'Item de trilha não encontrado' }); return; }
     if (result === 'unknown') { res.status(400).json({ error: 'Livro não encontrado' }); return; }
     if (result === 'duplicate') { res.status(400).json({ error: 'Livro repetido no item' }); return; }
+    if (result === 'ficcao') { res.status(400).json({ error: 'Livros de ficção não entram em trilhas' }); return; }
     res.json(getAprendizado(db, config.timeZone).trilhas.find((t) => t.id === trilha));
   });
 

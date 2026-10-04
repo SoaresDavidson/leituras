@@ -1,4 +1,4 @@
-import type { BookDetail, BookPatch, BookSummary, Dashboard, PluginBook, PluginPageStat, ReadingStatus } from '@leituras/shared';
+import type { BookDetail, BookPatch, BookSummary, Dashboard, PluginBook, PluginPageStat, ReadingStatus, TipoLivro } from '@leituras/shared';
 import { addDays, dayKey } from './dates';
 import type { Db } from './db';
 import { getFoco } from './foco';
@@ -15,10 +15,11 @@ type BookRow = {
   topicos: string;
   cover_status: string;
   arquivado_em: string | null;
+  tipo: TipoLivro | null;
 };
 
 export function importPluginData(db: Db, books: PluginBook[], stats: PluginPageStat[]): void {
-  // User-owned columns (categoria, status_manual, topicos) are never in the UPDATE list
+  // User-owned columns (categoria, status_manual, topicos, tipo) are never in the UPDATE list
   const upsertBook = db.prepare(`
     INSERT INTO book (md5, title, authors, series, language, pages, last_open)
     VALUES (@md5, @title, @authors, @series, @language, @pages, @last_open)
@@ -55,7 +56,7 @@ export function importPluginData(db: Db, books: PluginBook[], stats: PluginPageS
 }
 
 function loadBooks(db: Db, md5?: string): BookRow[] {
-  const sql = 'SELECT md5, title, authors, series, pages, categoria, status_manual, topicos, cover_status, arquivado_em FROM book';
+  const sql = 'SELECT md5, title, authors, series, pages, categoria, status_manual, topicos, cover_status, arquivado_em, tipo FROM book';
   return (md5 ? db.prepare(`${sql} WHERE md5 = ?`).all(md5) : db.prepare(sql).all()) as BookRow[];
 }
 
@@ -78,6 +79,7 @@ function buildDetail(db: Db, row: BookRow, timeZone: string, today: string): Boo
     status,
     statusManual: row.status_manual,
     categoria: row.categoria,
+    tipo: row.tipo,
     startedAt: stats.startedAt,
     finishedAt: stats.finishedAt,
     lastReadAt: stats.lastReadAt,
@@ -118,6 +120,7 @@ export function updateBook(db: Db, md5: string, patch: BookPatch, today: string)
   if (patch.topicos !== undefined) { sets.push('topicos = @topicos'); values.topicos = patch.topicos; }
   if (patch.statusManual !== undefined) { sets.push('status_manual = @status'); values.status = patch.statusManual; }
   if (patch.arquivado !== undefined) { sets.push('arquivado_em = @arquivado'); values.arquivado = patch.arquivado ? today : null; }
+  if (patch.tipo !== undefined) { sets.push('tipo = @tipo'); values.tipo = patch.tipo; }
   if (sets.length === 0) return db.prepare('SELECT 1 FROM book WHERE md5 = ?').get(md5) !== undefined;
   return db.prepare(`UPDATE book SET ${sets.join(', ')} WHERE md5 = @md5`).run(values).changes > 0;
 }

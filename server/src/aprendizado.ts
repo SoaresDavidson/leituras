@@ -27,6 +27,11 @@ const getNota = (db: Db, id: number) => {
 
 const bookExists = (db: Db, md5: string) => db.prepare('SELECT 1 FROM book WHERE md5 = ?').get(md5) !== undefined;
 
+// Fiction is left out of aprendizado; its notes and trail marks stay stored and come back when it is estudo again.
+// NULL (unclassified) counts as estudo.
+const NAO_FICCAO = "b.tipo IS NOT 'ficcao'";
+const isFiccao = (db: Db, md5: string) => db.prepare("SELECT 1 FROM book WHERE md5 = ? AND tipo = 'ficcao'").get(md5) !== undefined;
+
 // ---- notes and spaced review ----
 
 export function addNota(db: Db, md5: string, texto: string, today: string): Nota | undefined {
@@ -72,14 +77,19 @@ export function setArea(db: Db, md5: string, area: string | null): 'ok' | 'not-f
   return db.prepare('UPDATE book SET area = ? WHERE md5 = ?').run(area, md5).changes > 0 ? 'ok' : 'not-found';
 }
 
-// Replaces the books marked on one trail item
-export function setTrilhaItem(db: Db, trilha: string, item: string, md5s: string[]): 'ok' | 'not-found' | 'unknown' | 'duplicate' {
+// Replaces the (non-fiction) books marked on one trail item; fiction marks are hidden, so they are kept
+export function setTrilhaItem(
+  db: Db, trilha: string, item: string, md5s: string[],
+): 'ok' | 'not-found' | 'unknown' | 'duplicate' | 'ficcao' {
   if (!TRILHAS.find((t) => t.id === trilha)?.itens.some((i) => i.id === item)) return 'not-found';
   if (new Set(md5s).size !== md5s.length) return 'duplicate';
   if (md5s.some((md5) => !bookExists(db, md5))) return 'unknown';
+  if (md5s.some((md5) => isFiccao(db, md5))) return 'ficcao';
   const insert = db.prepare('INSERT INTO trilha_livro (trilha, item, md5) VALUES (?, ?, ?)');
   db.transaction(() => {
-    db.prepare('DELETE FROM trilha_livro WHERE trilha = ? AND item = ?').run(trilha, item);
+    db.prepare(`
+      DELETE FROM trilha_livro WHERE trilha = ? AND item = ?
+        AND md5 NOT IN (SELECT md5 FROM book WHERE tipo = 'ficcao')`).run(trilha, item);
     for (const md5 of md5s) insert.run(trilha, item, md5);
   })();
   return 'ok';
@@ -194,8 +204,10 @@ function topicos(books: BookArea[]): Aprendizado['topicos'] {
 export function getAprendizado(db: Db, timeZone: string, now = Date.now()): Aprendizado {
   const today = dayKey(now / 1000, timeZone);
   const areas = new Map((db.prepare('SELECT md5, area FROM book').all() as { md5: string; area: string | null }[]).map((r) => [r.md5, r.area]));
-  const books: BookArea[] = listBookDetails(db, timeZone, now).map((b) => ({ ...b, area: areas.get(b.md5) ?? null }));
-  const notas = (db.prepare(`${NOTA_SQL} ORDER BY a.criado_em DESC, a.id DESC`).all() as NotaRow[]).map(toNota);
+  const books: BookArea[] = listBookDetails(db, timeZone, now)
+    .filter((b) => b.tipo !== 'ficcao')
+    .map((b) => ({ ...b, area: areas.get(b.md5) ?? null }));
+  const notas = (db.prepare(`${NOTA_SQL} WHERE ${NAO_FICCAO} ORDER BY a.criado_em DESC, a.id DESC`).all() as NotaRow[]).map(toNota);
   const revisarHoje = notas
     .filter((n) => n.proximaRevisao <= today)
     .sort((a, b) => a.proximaRevisao.localeCompare(b.proximaRevisao) || a.id - b.id);

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { BookDetail, Metadados, MetadadosPatch } from '@leituras/shared';
+import type { BookDetail, Metadados, MetadadosPatch, TipoLivro } from '@leituras/shared';
 import { ApiError, aplicarMetadados, buscarMetadados, deleteLivro, getBook, getDashboard, getLivroExtras, patchBook, putFila, putMaisTarde } from '../api';
 import { CHART, tooltipStyle } from '../styles/chart';
 import { fmtDate, fmtHours } from '../format';
@@ -43,15 +43,42 @@ function EditForm({ book }: { book: BookDetail }) {
         <input value={categoria} onChange={(e) => setCategoria(e.target.value)} className="input mt-1" />
       </label>
       <div><StatusSelect value={status} onChange={setStatus} arquivado={book.arquivado} /></div>
-      <label className="block label">Tópicos aprendidos
-        <textarea rows={6} value={topicos} onChange={(e) => setTopicos(e.target.value)} className="input mt-1" />
-      </label>
+      {book.tipo !== 'ficcao' && (
+        <label className="block label">Tópicos aprendidos
+          <textarea rows={6} value={topicos} onChange={(e) => setTopicos(e.target.value)} className="input mt-1" />
+        </label>
+      )}
       <div className="flex items-center gap-3">
         <button disabled={save.isPending} className="btn-primary">Salvar</button>
         {save.isSuccess && <span className="success">Salvo.</span>}
         {save.isError && <span className="error">Erro ao salvar.</span>}
       </div>
     </form>
+  );
+}
+
+// Unclassified (null) behaves as estudo, so it is shown as such
+function TipoSelector({ book }: { book: BookDetail }) {
+  const qc = useQueryClient();
+  const atual: TipoLivro = book.tipo ?? 'estudo';
+  const salvar = useMutation({
+    mutationFn: (tipo: TipoLivro) => patchBook(book.md5, { tipo }),
+    onSuccess: (updated) => {
+      qc.setQueryData(['book', book.md5], updated);
+      qc.invalidateQueries({ queryKey: ['books'] });
+      qc.invalidateQueries({ queryKey: ['aprendizado'] });
+    },
+  });
+  const opcoes: [TipoLivro, string][] = [['estudo', 'Estudo'], ['ficcao', 'Ficção']];
+  return (
+    <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Tipo do livro">
+      {opcoes.map(([tipo, label]) => (
+        <button key={tipo} aria-pressed={atual === tipo} disabled={salvar.isPending} onClick={() => tipo !== atual && salvar.mutate(tipo)} className="btn">
+          {label}
+        </button>
+      ))}
+      {salvar.isError && <span className="error">Erro ao salvar o tipo.</span>}
+    </div>
   );
 }
 
@@ -264,6 +291,7 @@ export default function BookPage() {
             {extras.data?.anoPublicacao != null && <div className="text-sm">Publicado em {extras.data.anoPublicacao}</div>}
             {extras.isError && <div className="error">Erro ao carregar os dados extras do livro.</div>}
             <StatusBadge status={b.status} arquivado={b.arquivado} />
+            <TipoSelector book={b} />
             <ProgressBar value={b.progress} scale />
             <div className="text-sm">{Math.round(b.progress)}% de {b.pages} páginas</div>
             <div className="flex flex-wrap gap-2">
@@ -305,7 +333,8 @@ export default function BookPage() {
           </ResponsiveContainer>
         </div>
       </Card>
-      <AprendizadoLivro book={b} />
+      {/* fiction has no aprendizado; its notes stay stored and return if the book goes back to estudo */}
+      {b.tipo !== 'ficcao' && <AprendizadoLivro book={b} />}
       <Card title="Anotações"><EditForm book={b} /></Card>
       <MetadadosCard book={b} />
       <ExcluirLivro book={b} />
