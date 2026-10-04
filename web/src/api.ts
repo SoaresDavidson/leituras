@@ -1,4 +1,4 @@
-import type { BookDetail, BookPatch, BookSummary, Dashboard, Foco } from '@leituras/shared';
+import type { Aprendizado, BookDetail, BookPatch, BookSummary, Dashboard, Foco, LivroAprendizado, Nota, TrilhaProgresso } from '@leituras/shared';
 
 export class ApiError extends Error {
   constructor(public status: number) {
@@ -32,3 +32,16 @@ export const putFila = (md5s: string[]) => req<Foco>('/fila', { method: 'PUT', b
 export const patchFoco = (patch: { limite?: number; prazoDias?: number }) =>
   req<Foco>('/foco', { method: 'PATCH', body: JSON.stringify(patch) });
 export const coverUrl = (md5: string) => `/api/books/${md5}/cover`;
+
+// ---- aprendizado ----
+export const getAprendizado = () => req<Aprendizado>('/aprendizado');
+export const getLivroAprendizado = (md5: string) => req<LivroAprendizado>(`/aprendizado/livros/${md5}`);
+export const putArea = (md5: string, area: string | null) =>
+  req<LivroAprendizado>(`/aprendizado/livros/${md5}/area`, { method: 'PUT', body: JSON.stringify({ area }) });
+export const postNota = (md5: string, texto: string) =>
+  req<Nota>('/aprendizado/notas', { method: 'POST', body: JSON.stringify({ md5, texto }) });
+export const deleteNota = (id: number) => req<void>(`/aprendizado/notas/${id}`, { method: 'DELETE' });
+export const revisarNota = (id: number, lembrei: boolean) =>
+  req<Nota>(`/aprendizado/notas/${id}/revisao`, { method: 'POST', body: JSON.stringify({ lembrei }) });
+export const putTrilhaItem = (trilha: string, item: string, md5s: string[]) =>
+  req<TrilhaProgresso>(`/aprendizado/trilhas/${trilha}/itens/${item}`, { method: 'PUT', body: JSON.stringify({ md5s }) });

@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import DashboardPage from './pages/DashboardPage';
 import BookPage from './pages/BookPage';
+import AprendizadoPage from './pages/AprendizadoPage';
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
           <Route element={<Layout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/livros/:md5" element={<BookPage />} />
+            <Route path="/aprendizado" element={<AprendizadoPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
