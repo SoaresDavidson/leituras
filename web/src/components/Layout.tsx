@@ -9,6 +9,7 @@ const LINKS: [string, string][] = [
   ['/aprendizado', 'Aprendizado'],
   ['/conquistas', 'Conquistas'],
   ['/livros', 'Livros'],
+  ['/configuracoes', 'Configurações'],
 ];
 
 export default function Layout() {

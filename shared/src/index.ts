@@ -331,3 +331,10 @@ export type Jogo = {
   proximaConquista: Medalha | null;
   recordes: Recorde[];
 };
+
+// ---- painel (dashboard visibility, per instance) ----
+
+export const PAINEL_ITENS = ['foco', 'livrosConcluidos', 'horas', 'paginas', 'atividade', 'concluidosPorMes', 'todosLivros'] as const;
+export type PainelItem = (typeof PAINEL_ITENS)[number];
+export type PainelConfig = Record<PainelItem, boolean>;
+export type PainelConfigPatch = Partial<PainelConfig>;

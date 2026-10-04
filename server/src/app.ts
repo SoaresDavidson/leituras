@@ -14,6 +14,7 @@ import {
   applyMetadados, deleteBook, dropBlacklisted, fetchMetadados, getLivroExtras, getLivros, parseMetadadosPatch, removeFromBlacklist, setMaisTarde,
 } from './livros';
 import { GATILHO_MAX, getHabito, readHabitoSettings, updateHabitoSettings } from './habito';
+import { getPainelConfig, parsePainelPatch, resetPainelConfig, updatePainelConfig } from './painel';
 import { getRetroPeriodo, getRetrospectiva, MAX_OFFSET, updateRetroSettings } from './retrospectiva';
 import { getJogo, trocarCarta } from './jogo';
 
@@ -255,8 +256,23 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     res.json(getHabito(db, config.timeZone));
   });
 
+  // ---- painel (visibility of dashboard items) ----
+  api.get('/painel/config', (_req, res) => { res.json(getPainelConfig(db)); });
+
+  api.patch('/painel/config', (req, res) => {
+    const patch = parsePainelPatch(req.body);
+    if (!patch) { res.status(400).json({ error: 'Configuração inválida' }); return; }
+    updatePainelConfig(db, patch);
+    res.json(getPainelConfig(db));
+  });
+
+  api.delete('/painel/config', (_req, res) => {
+    resetPainelConfig(db);
+    res.json(getPainelConfig(db));
+  });
+
   // ---- retrospectiva ----
-  api.get('/retrospectiva', (_req, res) => { res.json(getRetrospectiva(db, config.timeZone)); });
+  api.get('/retrospectiva',(_req, res) => { res.json(getRetrospectiva(db, config.timeZone)); });
 
   api.get('/retrospectiva/periodo', (req, res) => {
     const q = parseRetroQuery(req.query);
