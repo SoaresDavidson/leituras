@@ -95,3 +95,21 @@ export type BookPatch = Partial<{
   topicos: string;
   arquivado: boolean;
 }>;
+
+// ---- livros ----
+
+export type LivroItem = BookSummary & { maisTarde: boolean };
+
+export type BlacklistEntry = { md5: string; title: string; authors: string; excluidoEm: string }; // excluidoEm YYYY-MM-DD
+
+export type Livros = {
+  books: LivroItem[]; // same order as GET /api/books
+  blacklist: BlacklistEntry[]; // most recently deleted first
+};
+
+export type LivroExtras = { maisTarde: boolean; anoPublicacao: number | null };
+
+// One Open Library search hit; autores is newline-separated like book.authors
+export type Metadados = { titulo: string; autores: string; paginas: number | null; anoPublicacao: number | null; assuntos: string[] };
+
+export type MetadadosPatch = Partial<{ authors: string; pages: number; anoPublicacao: number; assuntos: string[] }>;

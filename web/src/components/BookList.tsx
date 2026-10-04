@@ -1,10 +1,11 @@
 import type { BookSummary } from '@leituras/shared';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import Cover from './Cover';
 import StatusBadge from './StatusBadge';
 import ProgressBar from './ProgressBar';
 
-export default function BookList({ books }: { books: BookSummary[] }) {
+export default function BookList<T extends BookSummary>({ books, badge }: { books: T[]; badge?: (book: T) => ReactNode }) {
   if (books.length === 0) return <p className="text-sm text-stone-500">Nenhum livro.</p>;
   return (
     <ul className="divide-y divide-stone-200 dark:divide-stone-800">
@@ -17,7 +18,10 @@ export default function BookList({ books }: { books: BookSummary[] }) {
               <div className="truncate text-sm text-stone-500 dark:text-stone-400">{b.authors}</div>
               <ProgressBar value={b.progress} />
             </div>
-            <StatusBadge status={b.status} arquivado={b.arquivado} />
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <StatusBadge status={b.status} arquivado={b.arquivado} />
+              {badge?.(b)}
+            </div>
           </Link>
         </li>
       ))}

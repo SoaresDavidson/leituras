@@ -23,8 +23,10 @@ export function importPluginData(db: Db, books: PluginBook[], stats: PluginPageS
     INSERT INTO book (md5, title, authors, series, language, pages, last_open)
     VALUES (@md5, @title, @authors, @series, @language, @pages, @last_open)
     ON CONFLICT(md5) DO UPDATE SET
-      title = excluded.title, authors = excluded.authors, series = excluded.series,
-      language = excluded.language, pages = excluded.pages,
+      title = excluded.title, series = excluded.series, language = excluded.language,
+      -- an empty value from the plugin never erases authors/pages filled in from metadata
+      authors = CASE WHEN excluded.authors <> '' THEN excluded.authors ELSE book.authors END,
+      pages = CASE WHEN excluded.pages > 0 THEN excluded.pages ELSE book.pages END,
       last_open = MAX(book.last_open, excluded.last_open)
   `);
   // The plugin resends its whole history on every sync: duplicates are ignored
