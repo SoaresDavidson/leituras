@@ -1,0 +1,243 @@
+import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import type { MetaAno, RetroTipo, Retrospectiva } from '@leituras/shared';
+import { getRetroPeriodo, getRetrospectiva, patchRetrospectiva } from '../api';
+import { MONTHS, fmtDate, fmtHours } from '../format';
+import { Card } from '../components/Card';
+import Cover from '../components/Cover';
+import ProgressBar from '../components/ProgressBar';
+
+const btn = 'rounded border border-stone-300 px-2 py-1 text-sm hover:bg-stone-100 disabled:opacity-40 dark:border-stone-700 dark:hover:bg-stone-800';
+const muted = 'text-sm text-stone-500 dark:text-stone-400';
+const num = (n: number) => n.toLocaleString('pt-BR');
+const dayMonth = (d: string) => fmtDate(d).slice(0, 5);
+const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]}/${m.slice(2, 4)}`;
+
+function Delta({ atual, anterior }: { atual: number; anterior: number }) {
+  if (anterior === 0) return <span className={muted}>{atual > 0 ? 'nada no anterior' : 'igual ao anterior'}</span>;
+  const pct = Math.round(((atual - anterior) / anterior) * 100);
+  const color = pct > 0 ? 'text-emerald-600' : pct < 0 ? 'text-amber-600' : 'text-stone-500';
+  return <span className={`text-sm ${color}`}>{pct > 0 ? '+' : ''}{pct}% vs. anterior</span>;
+}
+
+function Metric({ label, value, atual, anterior }: { label: string; value: string; atual: number; anterior: number }) {
+  return (
+    <Card>
+      <div className={muted}>{label}</div>
+      <div className="text-2xl font-bold">{value}</div>
+      <Delta atual={atual} anterior={anterior} />
+    </Card>
+  );
+}
+
+function Periodo() {
+  const [tipo, setTipo] = useState<RetroTipo>('semana');
+  const [offset, setOffset] = useState(0);
+  const q = useQuery({
+    queryKey: ['retrospectiva', 'periodo', tipo, offset],
+    queryFn: () => getRetroPeriodo(tipo, offset),
+    placeholderData: keepPreviousData,
+  });
+  const p = q.data;
+  const nome = tipo === 'semana' ? 'semana' : 'mês';
+  const escolher = (t: RetroTipo) => { setTipo(t); setOffset(0); };
+  const tab = (t: RetroTipo) => `rounded px-3 py-1 text-sm ${tipo === t ? 'bg-emerald-600 font-medium text-white' : 'hover:bg-stone-100 dark:hover:bg-stone-800'}`;
+
+  return (
+    <Card title="Retrospectiva">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="flex gap-1" role="group" aria-label="Tipo de período">
+          <button className={tab('semana')} aria-pressed={tipo === 'semana'} onClick={() => escolher('semana')}>Semana</button>
+          <button className={tab('mes')} aria-pressed={tipo === 'mes'} onClick={() => escolher('mes')}>Mês</button>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <button aria-label={`${nome} anterior`} className={btn} onClick={() => setOffset(offset + 1)}>←</button>
+          <span className="min-w-28 text-center text-sm">{p ? `${dayMonth(p.inicio)} a ${dayMonth(p.fim)}` : '…'}</span>
+          <button aria-label={`Próxima ${nome}`} className={btn} disabled={offset === 0} onClick={() => setOffset(offset - 1)}>→</button>
+        </div>
+      </div>
+      {q.isError && <p className="text-red-600">Erro ao carregar a retrospectiva.</p>}
+      {p && (
+        <div className={`space-y-4 ${q.isPlaceholderData ? 'opacity-60' : ''}`}>
+          {offset === 0 && <p className={muted}>{tipo === 'semana' ? 'Semana' : 'Mês'} em andamento; a comparação é com o {nome} anterior inteiro.</p>}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <Metric label="Tempo lido" value={fmtHours(p.totais.minutos)} atual={p.totais.minutos} anterior={p.anterior.minutos} />
+            <Metric label="Páginas" value={num(p.totais.paginas)} atual={p.totais.paginas} anterior={p.anterior.paginas} />
+            <Metric label="Dias com leitura" value={String(p.totais.diasLidos)} atual={p.totais.diasLidos} anterior={p.anterior.diasLidos} />
+            <Metric label="Livros tocados" value={String(p.totais.livrosTocados)} atual={p.totais.livrosTocados} anterior={p.anterior.livrosTocados} />
+            <Metric label="Livros terminados" value={String(p.totais.livrosTerminados)} atual={p.totais.livrosTerminados} anterior={p.anterior.livrosTerminados} />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <div className={muted}>Melhor dia</div>
+              <div className="font-medium">{p.melhorDia ? `${fmtDate(p.melhorDia.date)} · ${p.melhorDia.minutos} min` : '—'}</div>
+            </div>
+            <div className="min-w-0">
+              <div className={muted}>Maior sessão</div>
+              <div className="truncate font-medium">
+                {p.maiorSessao ? `${p.maiorSessao.minutos} min em ${fmtDate(p.maiorSessao.date)} · ${p.maiorSessao.book.title}` : '—'}
+              </div>
+            </div>
+          </div>
+          {p.livros.length === 0 ? (
+            <p className={muted}>Nenhuma leitura neste período.</p>
+          ) : (
+            <ul className="divide-y divide-stone-200 dark:divide-stone-800">
+              {p.livros.map(({ book, minutos, paginas, terminou }) => (
+                <li key={book.md5}>
+                  <Link to={`/livros/${book.md5}`} className="flex items-center gap-3 py-2 hover:opacity-80">
+                    <Cover book={book} className="h-12 w-8" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium">{book.title}</div>
+                      <div className={muted}>{fmtHours(minutos)} · {num(paginas)} págs</div>
+                    </div>
+                    {terminou && <span className="text-sm font-medium text-emerald-600">terminou</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function Investimento({ investimento }: { investimento: Retrospectiva['investimento'] }) {
+  const [ano, setAno] = useState<number | null>(null);
+  const atual = (ano != null && investimento.anos.find((a) => a.ano === ano)) || investimento.total;
+  return (
+    <Card title="Quanto já investi">
+      <select aria-label="Recorte" value={ano ?? ''} onChange={(e) => setAno(e.target.value ? Number(e.target.value) : null)}
+        className="mb-4 rounded border border-stone-300 bg-transparent px-2 py-1 dark:border-stone-700 dark:bg-stone-900">
+        <option value="">Desde sempre</option>
+        {investimento.anos.map((a) => <option key={a.ano} value={a.ano}>{a.ano}</option>)}
+      </select>
+      <div className="mb-4 flex flex-wrap gap-x-8 gap-y-2">
+        <div><div className="text-3xl font-bold">{fmtHours(atual.minutos)}</div><div className={muted}>lidas</div></div>
+        <div><div className="text-3xl font-bold">{num(atual.paginas)}</div><div className={muted}>páginas</div></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {atual.equivalencias.map((e) => (
+          <div key={e.id} className="rounded border border-stone-200 p-3 dark:border-stone-800">
+            <div className="text-xl font-bold">{e.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</div>
+            <div className={muted}>{e.rotulo}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function AjustarMeta({ meta, onDone }: { meta: MetaAno; onDone: () => void }) {
+  const [valor, setValor] = useState(meta.metaPaginas);
+  const qc = useQueryClient();
+  const save = useMutation({
+    mutationFn: patchRetrospectiva,
+    onSuccess: (novo) => { qc.setQueryData(['retrospectiva'], novo); onDone(); },
+  });
+  const submit = (e: FormEvent) => { e.preventDefault(); save.mutate({ metaAnoPaginas: valor }); };
+  return (
+    <form onSubmit={submit} className="mb-3 flex flex-wrap items-end gap-3 text-sm">
+      <label className="block">Meta de páginas em {meta.ano}
+        <input type="number" min={100} max={100000} step={100} value={valor} onChange={(e) => setValor(Number(e.target.value))}
+          className="block w-28 rounded border border-stone-300 bg-transparent px-2 py-1 dark:border-stone-700 dark:bg-stone-900" />
+      </label>
+      <button disabled={save.isPending} className="rounded bg-emerald-600 px-3 py-1 font-medium text-white disabled:opacity-50">Salvar</button>
+      {save.isError && <span className="text-red-600">Use um número inteiro entre 100 e 100.000.</span>}
+    </form>
+  );
+}
+
+function Meta({ meta }: { meta: MetaAno }) {
+  const [ajustando, setAjustando] = useState(false);
+  const adiantado = meta.diferenca >= 0;
+  return (
+    <Card title={`Meta de ${meta.ano}`}>
+      <button onClick={() => setAjustando(!ajustando)} className="mb-2 text-sm text-stone-500 hover:underline">
+        {ajustando ? 'fechar ajustes' : 'ajustar'}
+      </button>
+      {ajustando && <AjustarMeta meta={meta} onDone={() => setAjustando(false)} />}
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+        <span className="text-2xl font-bold">{num(meta.lidas)} <span className="text-base font-normal text-stone-500">/ {num(meta.metaPaginas)} págs</span></span>
+        <span className={muted}>{Math.min(100, Math.round((meta.lidas / meta.metaPaginas) * 100))}%</span>
+      </div>
+      <ProgressBar value={(meta.lidas / meta.metaPaginas) * 100} />
+      <div className="mt-3 space-y-1">
+        {meta.restantes === 0 ? (
+          <p className="font-medium text-emerald-600">Meta batida! Tudo o que vier agora é bônus.</p>
+        ) : (
+          <p><span className="text-xl font-bold">{num(meta.paginasPorDia)} págs/dia</span> até 31/12 para fechar o ano ({meta.diasRestantes} {meta.diasRestantes === 1 ? 'dia' : 'dias'}, contando hoje).</p>
+        )}
+        <p className={`text-sm ${adiantado ? 'text-emerald-600' : 'text-amber-600'}`}>
+          {adiantado ? 'Adiantado' : 'Atrasado'} {num(Math.abs(meta.diferenca))} págs em relação ao ritmo linear (esperado hoje: {num(meta.esperadoHoje)}).
+        </p>
+      </div>
+    </Card>
+  );
+}
+
+function Ritmo({ r }: { r: Retrospectiva }) {
+  const data = r.velocidadeMensal.map((m) => ({ label: monthLabel(m.month), paginasPorHora: m.paginasPorHora }));
+  const temDados = data.some((d) => d.paginasPorHora != null);
+  return (
+    <Card title="Ritmo pessoal">
+      <h3 className="mb-2 text-sm font-medium">Velocidade de leitura (páginas por hora, por mês)</h3>
+      {temDados ? (
+        <div className="h-56">
+          <ResponsiveContainer>
+            <LineChart data={data} margin={{ left: -20, right: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={16} fontSize={12} />
+              <YAxis allowDecimals={false} fontSize={12} />
+              <Tooltip formatter={(v) => [`${v} págs/h`, 'Velocidade']} />
+              <Line type="monotone" dataKey="paginasPorHora" name="Velocidade" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <p className={muted}>Ainda não há meses com leitura suficiente (10 min ou mais).</p>
+      )}
+      <h3 className="mb-1 mt-4 text-sm font-medium">Por livro</h3>
+      <p className={`mb-2 ${muted}`}>Livros técnicos costumam ser mais lentos: compare cada um consigo mesmo.</p>
+      {r.ritmoLivros.length === 0 ? (
+        <p className={muted}>Nenhum livro com 10 min ou mais de leitura.</p>
+      ) : (
+        <ul className="divide-y divide-stone-200 dark:divide-stone-800">
+          {r.ritmoLivros.map(({ book, minutos, paginasPorHora }) => (
+            <li key={book.md5}>
+              <Link to={`/livros/${book.md5}`} className="flex items-center gap-3 py-2 hover:opacity-80">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate">{book.title}</div>
+                  <div className={muted}>{fmtHours(minutos)} lidas</div>
+                </div>
+                <span className="shrink-0 font-medium">{paginasPorHora} págs/h</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+export default function RetrospectivaPage() {
+  const q = useQuery({ queryKey: ['retrospectiva'], queryFn: getRetrospectiva });
+  return (
+    <>
+      <h1 className="text-2xl font-bold">Retrospectiva</h1>
+      <Periodo />
+      {q.isError && <p className="text-red-600">Erro ao carregar os dados.</p>}
+      {q.isLoading && <p>Carregando…</p>}
+      {q.data && (
+        <>
+          <Meta meta={q.data.meta} />
+          <Investimento investimento={q.data.investimento} />
+          <Ritmo r={q.data} />
+        </>
+      )}
+    </>
+  );
+}

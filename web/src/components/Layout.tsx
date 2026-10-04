@@ -17,6 +17,7 @@ export default function Layout() {
           <Link to="/" className="text-lg font-semibold">Leituras</Link>
           <nav className="flex items-center gap-4 text-sm">
             <Link to="/" className="hover:underline">Painel</Link>
+            <Link to="/retrospectiva" className="hover:underline">Retrospectiva</Link>
             <button onClick={out} className="rounded border border-stone-300 px-3 py-1 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800">Sair</button>
           </nav>
         </div>
