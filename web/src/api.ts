@@ -1,5 +1,5 @@
 import type {
-  BookDetail, BookPatch, BookSummary, Dashboard, Foco, Habito, HabitoPatch, LivroExtras, Livros, Metadados, MetadadosPatch,
+  BookDetail, BookPatch, BookSummary, Dashboard, Foco, Habito, HabitoPatch, Jogo, LivroExtras, Livros, Metadados, MetadadosPatch,
 } from '@leituras/shared';
 
 export class ApiError extends Error {
@@ -49,3 +49,5 @@ export const restoreLivro = (md5: string) => req<Livros>(`/livros/blacklist/${md
 export const buscarMetadados = (md5: string) => req<{ resultado: Metadados | null }>(`/livros/${md5}/metadados`);
 export const aplicarMetadados = (md5: string, patch: MetadadosPatch) =>
   req<LivroExtras>(`/livros/${md5}/metadados`, { method: 'POST', body: JSON.stringify(patch) });
+export const getJogo = () => req<Jogo>('/jogo');
+export const trocarCarta = () => req<Jogo>('/jogo/carta/trocar', { method: 'POST' });

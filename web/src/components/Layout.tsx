@@ -13,12 +13,13 @@ export default function Layout() {
   return (
     <>
       <header className="border-b border-stone-200 dark:border-stone-800">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <Link to="/" className="text-lg font-semibold">Leituras</Link>
-          <nav className="flex items-center gap-4 text-sm">
+          <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm sm:gap-x-4">
             <Link to="/" className="hover:underline">Painel</Link>
             <Link to="/habito" className="hover:underline">Hábito</Link>
             <Link to="/livros" className="hover:underline">Livros</Link>
+            <Link to="/conquistas" className="hover:underline">Conquistas</Link>
             <button onClick={out} className="rounded border border-stone-300 px-3 py-1 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800">Sair</button>
           </nav>
         </div>
