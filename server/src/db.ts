@@ -49,6 +49,19 @@ const MIGRATIONS = [
     posicao INTEGER NOT NULL
   );
   `,
+  `
+  CREATE TABLE blacklist (
+    md5 TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    authors TEXT NOT NULL DEFAULT '',
+    excluido_em TEXT NOT NULL -- YYYY-MM-DD
+  );
+  CREATE TABLE mais_tarde (
+    md5 TEXT PRIMARY KEY REFERENCES book(md5) ON DELETE CASCADE,
+    adicionado_em TEXT NOT NULL
+  );
+  ALTER TABLE book ADD COLUMN ano_publicacao INTEGER; -- owned by the user
+  `,
 ];
 
 export function openDb(filename: string): Db {

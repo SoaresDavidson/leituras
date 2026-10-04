@@ -9,6 +9,9 @@ import { coverPath, fetchMissingCovers } from './covers';
 import { dayKey } from './dates';
 import type { Db } from './db';
 import { getFoco, setFila, updateFocoSettings } from './foco';
+import {
+  applyMetadados, deleteBook, dropBlacklisted, fetchMetadados, getLivroExtras, getLivros, parseMetadadosPatch, removeFromBlacklist, setMaisTarde,
+} from './livros';
 
 const STATUSES: ReadingStatus[] = ['lendo', 'lido', 'pausado'];
 
@@ -36,7 +39,7 @@ function parseFocoPatch(body: unknown): { limite?: number; prazoDias?: number } 
   return { limite: limite as number | undefined, prazoDias: prazoDias as number | undefined };
 }
 
-export function createApp(db: Db, config: Config, options: { fetchCovers?: boolean } = {}) {
+export function createApp(db: Db, config: Config, options: { fetchCovers?: boolean; fetchFn?: typeof fetch } = {}) {
   const app = express();
   app.set('trust proxy', 'loopback');
   app.use(express.json({ limit: '50mb' }));
@@ -60,7 +63,8 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
       res.status(400).json({ error: 'books and stats must be arrays' });
       return;
     }
-    importPluginData(db, books, stats);
+    const allowed = dropBlacklisted(db, books, stats);
+    importPluginData(db, allowed.books, allowed.stats);
     // Respond first: the plugin runs on suspend and should not wait for Open Library
     res.json({ message: 'Upload successful' });
     if (options.fetchCovers !== false) {
@@ -128,6 +132,55 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     if (!patch) { res.status(400).json({ error: 'Ajustes inválidos' }); return; }
     updateFocoSettings(db, patch);
     res.json(currentFoco());
+  });
+
+  // ---- livros ----
+  const today = () => dayKey(Date.now() / 1000, config.timeZone);
+  const notFound = (res: Response) => { res.status(404).json({ error: 'Livro não encontrado' }); };
+
+  api.get('/livros', (_req, res) => { res.json(getLivros(db, config.timeZone)); });
+
+  api.get('/livros/:md5', (req, res) => {
+    const extras = getLivroExtras(db, req.params.md5);
+    if (!extras) { notFound(res); return; }
+    res.json(extras);
+  });
+
+  api.put('/livros/:md5/mais-tarde', (req, res) => {
+    const { maisTarde } = (req.body ?? {}) as { maisTarde?: unknown };
+    if (typeof maisTarde !== 'boolean') { res.status(400).json({ error: 'Dados inválidos' }); return; }
+    if (!setMaisTarde(db, req.params.md5, maisTarde, today())) { notFound(res); return; }
+    res.json(getLivroExtras(db, req.params.md5));
+  });
+
+  api.delete('/livros/blacklist/:md5', (req, res) => {
+    if (!removeFromBlacklist(db, req.params.md5)) { res.status(404).json({ error: 'Livro não está na lista de excluídos' }); return; }
+    res.json(getLivros(db, config.timeZone));
+  });
+
+  api.delete('/livros/:md5', async (req, res) => {
+    if (!(await deleteBook(db, req.params.md5, today(), config.dataPath))) { notFound(res); return; }
+    res.json(getLivros(db, config.timeZone));
+  });
+
+  api.get('/livros/:md5/metadados', async (req, res) => {
+    let resultado;
+    try {
+      resultado = await fetchMetadados(db, req.params.md5, options.fetchFn);
+    } catch (err) {
+      console.warn(`Metadata lookup failed for ${req.params.md5}:`, err);
+      res.status(502).json({ error: 'Não foi possível consultar o Open Library' });
+      return;
+    }
+    if (resultado === undefined) { notFound(res); return; }
+    res.json({ resultado });
+  });
+
+  api.post('/livros/:md5/metadados', (req, res) => {
+    const patch = parseMetadadosPatch(req.body);
+    if (!patch) { res.status(400).json({ error: 'Metadados inválidos' }); return; }
+    if (!applyMetadados(db, req.params.md5, patch)) { notFound(res); return; }
+    res.json(getLivroExtras(db, req.params.md5));
   });
 
   api.get('/books/:md5/cover', (req, res) => {
