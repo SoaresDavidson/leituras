@@ -161,3 +161,87 @@ export type HabitoPatch = Partial<{
   metaMesPaginas: number;
   gatilho: string;
 }>;
+
+// ---- jogo ----
+
+export type UnidadeJogo = 'min' | 'págs' | 'dias' | 'sessões' | 'livros' | 'categorias' | 'h' | '%';
+
+// `atual` is not capped at `alvo`
+export type ProgressoJogo = { atual: number; alvo: number; unidade: UnidadeJogo; feito: boolean };
+
+export type Missao = ProgressoJogo & { id: string; titulo: string; md5: string | null };
+
+export type Desafio = ProgressoJogo & { id: string; titulo: string; inicio: string; fim: string }; // YYYY-MM-DD
+
+export type CartaDesafio = ProgressoJogo & { id: string; titulo: string; trocada: boolean; podeTrocar: boolean };
+
+export type DesafioRelampago = ProgressoJogo & {
+  titulo: string;
+  prazoHora: number; // local hour; counts reading that started before it
+  estado: 'ativo' | 'feito' | 'perdido';
+};
+
+export type Chefe = {
+  book: BookSummary;
+  vida: number; // pages left
+  vidaMax: number; // book pages
+  danoPorDia: { date: string; dano: number }[]; // last 7 days, oldest first
+  danoMedio: number | null; // pages/day over the last 14 days
+  previsao: string | null; // YYYY-MM-DD
+};
+
+export type ChefeDerrotado = { book: BookSummary; derrotadoEm: string | null };
+
+export type CorridaFantasma = {
+  id: 'mes-passado' | 'ano-passado';
+  mes: string; // YYYY-MM
+  mesFantasma: string; // YYYY-MM
+  dias: { dia: number; voce: number | null; fantasma: number }[]; // cumulative pages; voce null after today
+  voce: number;
+  fantasma: number; // both at today's day of month
+};
+
+export type ClasseLeitor = {
+  id: string;
+  nome: string;
+  criterio: string;
+  valor: number;
+  referencia: number; // valor that scores 100
+  unidade: string;
+  pontuacao: number; // 0-100
+};
+
+export type Medalha = ProgressoJogo & {
+  id: string;
+  nome: string;
+  descricao: string;
+  sigla: string;
+  raridade: 'comum' | 'rara' | 'épica';
+  desbloqueadaEm: string | null; // YYYY-MM-DD, null when locked or the date is unknown
+};
+
+export type Recorde = {
+  id: string;
+  rotulo: string;
+  valor: number | null;
+  unidade: UnidadeJogo;
+  data: string | null; // YYYY-MM-DD, or YYYY-MM for a month
+  detalhe: string | null; // book title when the record is about a book
+};
+
+export type Jogo = {
+  hoje: string;
+  missoes: Missao[];
+  semana: Desafio;
+  mes: Desafio;
+  carta: CartaDesafio;
+  relampago: DesafioRelampago;
+  chefes: Chefe[]; // least life first
+  chefesDerrotados: ChefeDerrotado[]; // most recent first
+  fantasma: CorridaFantasma[]; // mes-passado, ano-passado
+  classe: ClasseLeitor | null;
+  classes: ClasseLeitor[]; // catalog order
+  medalhas: Medalha[]; // catalog order
+  proximaConquista: Medalha | null;
+  recordes: Recorde[];
+};

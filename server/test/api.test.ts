@@ -274,3 +274,36 @@ describe('habito api', () => {
     expect(res.body).toMatchObject({ metas: { dia: { minutos: 30 } }, gatilho: 'antes de dormir' });
   });
 });
+
+describe('jogo api', () => {
+  it('requires a session for jogo routes', async () => {
+    await request(app).get('/api/jogo').expect(401);
+    await request(app).post('/api/jogo/carta/trocar').expect(401);
+  });
+
+  it('returns the game block', async () => {
+    await sendImport({ books: [book], stats: pageStats(3, Math.floor(Date.now() / 1000) - 600) }).expect(200);
+    const agent = await login();
+    const res = await agent.get('/api/jogo').expect(200);
+    expect(res.body.missoes).toHaveLength(3);
+    expect(res.body.medalhas.length).toBeGreaterThan(0);
+    expect(res.body.fantasma.map((f: { id: string }) => f.id)).toEqual(['mes-passado', 'ano-passado']);
+    expect(res.body.carta).toMatchObject({ trocada: false, podeTrocar: true });
+  });
+
+  it('swaps the card once a day', async () => {
+    const agent = await login();
+    const first = await agent.post('/api/jogo/carta/trocar').expect(200);
+    expect(first.body.carta).toMatchObject({ trocada: true, podeTrocar: false });
+    const second = await agent.post('/api/jogo/carta/trocar').expect(409);
+    expect(second.body).toEqual({ error: 'A carta de hoje já foi trocada' });
+  });
+
+  it('keeps the card swap when the plugin imports again', async () => {
+    const agent = await login();
+    await agent.post('/api/jogo/carta/trocar').expect(200);
+    await sendImport({ books: [book], stats: pageStats(2) }).expect(200);
+    const res = await agent.get('/api/jogo').expect(200);
+    expect(res.body.carta.trocada).toBe(true);
+  });
+});

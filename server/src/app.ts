@@ -13,6 +13,7 @@ import {
   applyMetadados, deleteBook, dropBlacklisted, fetchMetadados, getLivroExtras, getLivros, parseMetadadosPatch, removeFromBlacklist, setMaisTarde,
 } from './livros';
 import { GATILHO_MAX, getHabito, readHabitoSettings, updateHabitoSettings } from './habito';
+import { getJogo, trocarCarta } from './jogo';
 
 const STATUSES: ReadingStatus[] = ['lendo', 'lido', 'pausado'];
 
@@ -229,6 +230,14 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     if (typeof patch === 'string') { res.status(400).json({ error: patch }); return; }
     updateHabitoSettings(db, patch);
     res.json(getHabito(db, config.timeZone));
+  });
+
+  // ---- jogo ----
+  api.get('/jogo', (_req, res) => { res.json(getJogo(db, config.timeZone)); });
+
+  api.post('/jogo/carta/trocar', (_req, res) => {
+    if (!trocarCarta(db, config.timeZone)) { res.status(409).json({ error: 'A carta de hoje já foi trocada' }); return; }
+    res.json(getJogo(db, config.timeZone));
   });
 
   api.get('/books/:md5/cover', (req, res) => {

@@ -67,7 +67,7 @@ export function updateHabitoSettings(db: Db, patch: HabitoPatch): void {
 }
 
 // A goal part set to 0 is off; every part that is on must be reached
-const meets = (dia: Dia, meta: HabitoMeta, factor = 1) =>
+export const meets = (dia: Dia, meta: HabitoMeta, factor = 1) =>
   (meta.minutos === 0 || dia.minutos >= meta.minutos * factor) && (meta.paginas === 0 || dia.paginas >= meta.paginas * factor);
 
 const NIVEIS: { nivel: NivelSequencia; cumpre: (dia: Dia, meta: HabitoMeta) => boolean }[] = [
@@ -77,7 +77,7 @@ const NIVEIS: { nivel: NivelSequencia; cumpre: (dia: Dia, meta: HabitoMeta) => b
 ];
 
 const hourFormatters = new Map<string, Intl.DateTimeFormat>();
-function hourOf(epochSeconds: number, timeZone: string): number {
+export function hourOf(epochSeconds: number, timeZone: string): number {
   let fmt = hourFormatters.get(timeZone);
   if (!fmt) {
     fmt = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hourCycle: 'h23' });
@@ -87,7 +87,7 @@ function hourOf(epochSeconds: number, timeZone: string): number {
 }
 
 // 0 = Monday .. 6 = Sunday
-const weekdayOf = (day: string) => (new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7;
+export const weekdayOf = (day: string) => (new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7;
 
 const range = (from: string, to: string) => Array.from({ length: daysBetween(from, to) + 1 }, (_, i) => addDays(from, i));
 const pct = (now: number, before: number) => (before === 0 ? null : Math.round(((now - before) / before) * 100));
