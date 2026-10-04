@@ -1,6 +1,6 @@
 // Accent- and case-insensitive fuzzy matching, small enough for a few hundred books.
 
-export const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+export const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 const TITLE_BONUS = 20;
 

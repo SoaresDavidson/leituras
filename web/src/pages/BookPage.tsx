@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -115,9 +115,13 @@ function MaisTardeButton({ md5 }: { md5: string }) {
   const refresh = useRefreshLivro(md5);
   const toggle = useMutation({ mutationFn: () => putMaisTarde(md5, !extras.data!.maisTarde), onSuccess: refresh });
   return (
-    <button disabled={!extras.data || toggle.isPending} onClick={() => toggle.mutate()} className={btn}>
-      {extras.data?.maisTarde ? 'Tirar de ler mais tarde' : 'Ler mais tarde'}
-    </button>
+    <>
+      <button disabled={!extras.data || toggle.isPending} onClick={() => toggle.mutate()} className={btn}>
+        {extras.data?.maisTarde ? 'Tirar de ler mais tarde' : 'Ler mais tarde'}
+      </button>
+      {extras.isError && <span className="self-center text-sm text-red-600">Erro ao carregar “ler mais tarde”.</span>}
+      {toggle.isError && <span className="self-center text-sm text-red-600">Erro ao atualizar “ler mais tarde”.</span>}
+    </>
   );
 }
 
@@ -128,17 +132,20 @@ function MetadadosCard({ book }: { book: BookDetail }) {
   const [marcados, setMarcados] = useState<Set<Campo>>(new Set());
   const busca = useMutation({
     mutationFn: () => buscarMetadados(book.md5),
-    onSuccess: ({ resultado }) => setMarcados(new Set(resultado ? campos(resultado).map((c) => c.key) : [])),
+    onMutate: () => aplicar.reset(),
+    onSuccess: ({ resultado }) => setMarcados(new Set(resultado
+      ? campos(resultado).map((c) => c.key).filter((k) => k !== 'pages' || book.pages === 0)
+      : [])),
   });
   const aplicar = useMutation({
     mutationFn: (patch: MetadadosPatch) => aplicarMetadados(book.md5, patch),
     onSuccess: () => { refresh(); busca.reset(); },
   });
 
-  // Pages are only offered when KOReader did not report them
+  // Pages can override what KOReader reported; preselected only when it reported none
   const campos = (m: Metadados) => [
     m.autores && m.autores !== book.authors && { key: 'authors' as const, label: 'Autores', value: m.autores.replace(/\n/g, ', ') },
-    m.paginas && book.pages === 0 && { key: 'pages' as const, label: 'Páginas', value: String(m.paginas) },
+    m.paginas && m.paginas !== book.pages && { key: 'pages' as const, label: book.pages > 0 ? `Páginas (hoje ${book.pages})` : 'Páginas', value: String(m.paginas) },
     m.anoPublicacao && { key: 'anoPublicacao' as const, label: 'Ano de publicação', value: String(m.anoPublicacao) },
     m.assuntos.length > 0 && { key: 'assuntos' as const, label: 'Assuntos (vão para os tópicos)', value: m.assuntos.join(', ') },
   ].filter((c) => !!c);
@@ -202,14 +209,18 @@ function ExcluirLivro({ book }: { book: BookDetail }) {
   const qc = useQueryClient();
   const nav = useNavigate();
   const [confirmando, setConfirmando] = useState(false);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (confirmando) confirmRef.current?.focus(); }, [confirmando]);
   const excluir = useMutation({
     mutationFn: () => deleteLivro(book.md5),
     onSuccess: (livros) => {
+      // leave the page before dropping its queries so "Livro não encontrado" never flashes
+      nav('/livros');
       qc.setQueryData(['livros'], livros);
       qc.removeQueries({ queryKey: ['book', book.md5] });
+      qc.removeQueries({ queryKey: ['livro-extras', book.md5] });
       qc.invalidateQueries({ queryKey: ['books'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
-      nav('/livros');
     },
   });
   return (
@@ -221,6 +232,7 @@ function ExcluirLivro({ book }: { book: BookDetail }) {
       {confirmando ? (
         <div className="flex flex-wrap items-center gap-2">
           <button
+            ref={confirmRef}
             disabled={excluir.isPending}
             onClick={() => excluir.mutate()}
             className="rounded bg-red-600 px-4 py-2 font-medium text-white disabled:opacity-50"
@@ -258,6 +270,7 @@ export default function BookPage() {
             <div className="text-stone-500 dark:text-stone-400">{b.authors}</div>
             {b.series && <div className="text-sm">Série: {b.series}</div>}
             {extras.data?.anoPublicacao != null && <div className="text-sm">Publicado em {extras.data.anoPublicacao}</div>}
+            {extras.isError && <div className="text-sm text-red-600">Erro ao carregar os dados extras do livro.</div>}
             <StatusBadge status={b.status} arquivado={b.arquivado} />
             <ProgressBar value={b.progress} />
             <div className="text-sm">{Math.round(b.progress)}% de {b.pages} páginas</div>

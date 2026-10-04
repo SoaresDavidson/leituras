@@ -32,7 +32,11 @@ function Excluidos({ blacklist }: { blacklist: { md5: string; title: string; exc
   const qc = useQueryClient();
   const restore = useMutation({
     mutationFn: restoreLivro,
-    onSuccess: (livros) => qc.setQueryData(['livros'], livros),
+    onSuccess: (livros) => {
+      qc.setQueryData(['livros'], livros);
+      qc.invalidateQueries({ queryKey: ['books'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
   });
   if (blacklist.length === 0) return null;
   return (
@@ -50,6 +54,7 @@ function Excluidos({ blacklist }: { blacklist: { md5: string; title: string; exc
             <button
               disabled={restore.isPending}
               onClick={() => restore.mutate(e.md5)}
+              aria-label={`Desfazer exclusão de ${e.title}`}
               className="shrink-0 rounded border border-stone-300 px-3 py-1 text-sm hover:bg-stone-100 disabled:opacity-40 dark:border-stone-700 dark:hover:bg-stone-800"
             >
               Desfazer
