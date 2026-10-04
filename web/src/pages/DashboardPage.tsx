@@ -6,6 +6,7 @@ import { MONTHS, fmtHours } from '../format';
 import { Card, Stat } from '../components/Card';
 import Heatmap from '../components/Heatmap';
 import BookList from '../components/BookList';
+import FocoPanel from '../components/FocoPanel';
 
 export default function DashboardPage() {
   const now = new Date().getFullYear();
@@ -27,6 +28,7 @@ export default function DashboardPage() {
       {dash.isError && <p className="text-red-600">Erro ao carregar o painel.</p>}
       {d && (
         <>
+          <FocoPanel foco={d.foco} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Stat label="Livros concluídos" value={d.totals.booksFinished} />
             <Stat label="Horas lidas" value={fmtHours(d.totals.minutes)} />
@@ -46,7 +48,6 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </div>
           </Card>
-          <Card title="Lendo agora"><BookList books={d.foco.abertos} /></Card>
         </>
       )}
       <Card title="Todos os livros">

@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { BookDetail, ReadingStatus } from '@leituras/shared';
-import { getBook, patchBook } from '../api';
+import { getBook, getDashboard, patchBook, putFila } from '../api';
 import { fmtDate, fmtHours } from '../format';
 import { Card } from '../components/Card';
 import Cover from '../components/Cover';
@@ -60,6 +60,43 @@ function EditForm({ book }: { book: BookDetail }) {
   );
 }
 
+function FocoActions({ book }: { book: BookDetail }) {
+  const qc = useQueryClient();
+  const year = new Date().getFullYear();
+  const dash = useQuery({ queryKey: ['dashboard', year], queryFn: () => getDashboard(year) });
+  const fila = dash.data?.foco.fila.map((f) => f.book.md5);
+  const naFila = fila?.includes(book.md5) ?? false;
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['dashboard'] });
+    qc.invalidateQueries({ queryKey: ['books'] });
+  };
+  const toggleFila = useMutation({
+    mutationFn: () => putFila(naFila ? fila!.filter((m) => m !== book.md5) : [...fila!, book.md5]),
+    onSuccess: refresh,
+  });
+  const toggleArquivo = useMutation({
+    mutationFn: () => patchBook(book.md5, { arquivado: !book.arquivado }),
+    onSuccess: (updated) => {
+      qc.setQueryData(['book', book.md5], updated);
+      refresh();
+    },
+  });
+  const btn = 'rounded border border-stone-300 px-3 py-1 text-sm hover:bg-stone-100 disabled:opacity-40 dark:border-stone-700 dark:hover:bg-stone-800';
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <button disabled={!fila || toggleFila.isPending} onClick={() => toggleFila.mutate()} className={btn}>
+        {naFila ? 'Tirar da fila' : 'Pôr na fila'}
+      </button>
+      {book.status !== 'lido' && (
+        <button disabled={toggleArquivo.isPending} onClick={() => toggleArquivo.mutate()} className={btn}>
+          {book.arquivado ? 'Desarquivar' : 'Arquivar'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function BookPage() {
   const { md5 = '' } = useParams();
   const q = useQuery({ queryKey: ['book', md5], queryFn: () => getBook(md5) });
@@ -77,9 +114,10 @@ export default function BookPage() {
             <h1 className="text-xl font-bold">{b.title}</h1>
             <div className="text-stone-500 dark:text-stone-400">{b.authors}</div>
             {b.series && <div className="text-sm">Série: {b.series}</div>}
-            <StatusBadge status={b.status} />
+            <StatusBadge status={b.status} arquivado={b.arquivado} />
             <ProgressBar value={b.progress} />
             <div className="text-sm">{Math.round(b.progress)}% de {b.pages} páginas</div>
+            <FocoActions book={b} />
           </div>
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">

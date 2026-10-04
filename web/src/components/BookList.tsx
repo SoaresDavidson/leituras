@@ -17,7 +17,7 @@ export default function BookList({ books }: { books: BookSummary[] }) {
               <div className="truncate text-sm text-stone-500 dark:text-stone-400">{b.authors}</div>
               <ProgressBar value={b.progress} />
             </div>
-            <StatusBadge status={b.status} />
+            <StatusBadge status={b.status} arquivado={b.arquivado} />
           </Link>
         </li>
       ))}
