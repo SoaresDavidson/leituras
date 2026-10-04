@@ -55,7 +55,7 @@ export type BookSummary = {
   lastReadAt: string | null; // YYYY-MM-DD
   totalMinutes: number;
   hasCover: boolean;
-  arquivado: boolean; // archived and not read since
+  arquivado: boolean; // archived and not actively read since (see server stats.ts effectiveStatus)
 };
 
 export type DailyMinutes = { date: string; minutes: number };
