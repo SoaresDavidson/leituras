@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import Cover from './Cover';
 import StatusBadge from './StatusBadge';
 import ProgressBar from './ProgressBar';
+import { StatusQuickEdit } from './StatusSelect';
 
 export default function BookList<T extends BookSummary>({ books, badge }: { books: T[]; badge?: (book: T) => ReactNode }) {
   if (books.length === 0) return <p className="muted">Nenhum livro.</p>;
@@ -23,6 +24,7 @@ export default function BookList<T extends BookSummary>({ books, badge }: { book
               {badge?.(b)}
             </div>
           </Link>
+          <div className="pb-3 pl-14"><StatusQuickEdit book={b} /></div>
         </li>
       ))}
     </ul>

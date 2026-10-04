@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { BookDetail, Metadados, MetadadosPatch, ReadingStatus } from '@leituras/shared';
+import type { BookDetail, Metadados, MetadadosPatch } from '@leituras/shared';
 import { ApiError, aplicarMetadados, buscarMetadados, deleteLivro, getBook, getDashboard, getLivroExtras, patchBook, putFila, putMaisTarde } from '../api';
 import { CHART, tooltipStyle } from '../styles/chart';
 import { fmtDate, fmtHours } from '../format';
+import { StatusSelect, type StatusValue } from '../components/StatusSelect';
 import { Card } from '../components/Card';
 import Cover from '../components/Cover';
 import ProgressBar from '../components/ProgressBar';
@@ -15,7 +16,7 @@ import AprendizadoLivro from '../components/AprendizadoLivro';
 function EditForm({ book }: { book: BookDetail }) {
   const qc = useQueryClient();
   const [categoria, setCategoria] = useState(book.categoria);
-  const [status, setStatus] = useState<ReadingStatus | ''>(book.statusManual ?? '');
+  const [status, setStatus] = useState<StatusValue>(book.statusManual ?? '');
   const [topicos, setTopicos] = useState(book.topicos);
   useEffect(() => {
     setCategoria(book.categoria);
@@ -41,14 +42,7 @@ function EditForm({ book }: { book: BookDetail }) {
       <label className="block label">Categoria
         <input value={categoria} onChange={(e) => setCategoria(e.target.value)} className="input mt-1" />
       </label>
-      <label className="block label">Status manual
-        <select value={status} onChange={(e) => setStatus(e.target.value as ReadingStatus | '')} className="input mt-1">
-          <option value="">Automático</option>
-          <option value="lendo">Lendo</option>
-          <option value="lido">Lido</option>
-          <option value="pausado">Pausado</option>
-        </select>
-      </label>
+      <div><StatusSelect value={status} onChange={setStatus} arquivado={book.arquivado} /></div>
       <label className="block label">Tópicos aprendidos
         <textarea rows={6} value={topicos} onChange={(e) => setTopicos(e.target.value)} className="input mt-1" />
       </label>
