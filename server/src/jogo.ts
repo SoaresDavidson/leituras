@@ -114,9 +114,13 @@ export function contexto(db: Db, timeZone: string, now = Date.now()): Contexto {
   const arquivadoEm = new Map((db.prepare('SELECT md5, arquivado_em FROM book').all() as { md5: string; arquivado_em: string | null }[])
     .map((r) => [r.md5, r.arquivado_em]));
   const ontemDia = addDays(hoje, -1);
+  // Yesterday's state runs the same stats and status rule on the stats recorded before today
   const statsAntes = new Map<string, StatRow[]>();
   for (const row of db.prepare('SELECT book_md5, page, start_time, duration, total_pages FROM page_stat').all() as (StatRow & { book_md5: string })[]) {
-    if (dayKey(row.start_time, timeZone) < hoje) statsAntes.set(row.book_md5, [...(statsAntes.get(row.book_md5) ?? []), row]);
+    if (dayKey(row.start_time, timeZone) >= hoje) continue;
+    const list = statsAntes.get(row.book_md5);
+    if (list) list.push(row);
+    else statsAntes.set(row.book_md5, [row]);
   }
   const ontem = new Map(livros.map((b): [string, Ontem] => {
     const { progress, lastReadAt, lastActiveAt } = computeBookStats(statsAntes.get(b.md5) ?? [], b.pages, timeZone);
