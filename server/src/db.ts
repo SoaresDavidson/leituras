@@ -62,6 +62,24 @@ const MIGRATIONS = [
   );
   ALTER TABLE book ADD COLUMN ano_publicacao INTEGER; -- owned by the user
   `,
+  `
+  ALTER TABLE book ADD COLUMN area TEXT; -- skill tree node id, NULL = none
+  CREATE TABLE aprendizado (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    md5 TEXT NOT NULL REFERENCES book(md5) ON DELETE CASCADE,
+    texto TEXT NOT NULL,
+    criado_em TEXT NOT NULL, -- YYYY-MM-DD
+    etapa INTEGER NOT NULL DEFAULT 0, -- index into INTERVALOS
+    proxima_revisao TEXT NOT NULL, -- YYYY-MM-DD
+    revisado_em TEXT -- YYYY-MM-DD of the last review
+  );
+  CREATE TABLE trilha_livro (
+    trilha TEXT NOT NULL,
+    item TEXT NOT NULL,
+    md5 TEXT NOT NULL REFERENCES book(md5) ON DELETE CASCADE,
+    PRIMARY KEY (trilha, item, md5)
+  );
+  `,
 ];
 
 export function openDb(filename: string): Db {

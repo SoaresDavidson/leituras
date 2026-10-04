@@ -10,6 +10,7 @@ import BookPage from './pages/BookPage';
 import HabitoPage from './pages/HabitoPage';
 import LivrosPage from './pages/LivrosPage';
 import RetrospectivaPage from './pages/RetrospectivaPage';
+import AprendizadoPage from './pages/AprendizadoPage';
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/livros/:md5" element={<BookPage />} />
             <Route path="/habito" element={<HabitoPage />} />
             <Route path="/retrospectiva" element={<RetrospectivaPage />} />
+            <Route path="/aprendizado" element={<AprendizadoPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

@@ -319,3 +319,94 @@ describe('retrospectiva api', () => {
     expect((await agent.get('/api/retrospectiva').expect(200)).body.meta.metaPaginas).toBe(1200);
   });
 });
+
+describe('aprendizado api', () => {
+  const seedBook = () => sendImport({ books: [book], stats: [] }).expect(200);
+
+  it('requires a session', async () => {
+    await request(app).get('/api/aprendizado').expect(401);
+    await request(app).post('/api/aprendizado/notas').send({ md5: 'abc123', texto: 'x' }).expect(401);
+  });
+
+  it('creates, reviews and deletes a note', async () => {
+    await seedBook();
+    const agent = await login();
+    const created = await agent.post('/api/aprendizado/notas').send({ md5: 'abc123', texto: '  Especiaria  ' }).expect(201);
+    expect(created.body).toMatchObject({ md5: 'abc123', bookTitle: 'Duna', texto: 'Especiaria', etapa: 0 });
+    const reviewed = await agent.post(`/api/aprendizado/notas/${created.body.id}/revisao`).send({ lembrei: true }).expect(200);
+    expect(reviewed.body.etapa).toBe(1);
+    expect((await agent.get('/api/aprendizado/livros/abc123').expect(200)).body.notas).toHaveLength(1);
+    expect((await agent.get('/api/aprendizado').expect(200)).body.notas).toHaveLength(1);
+    await agent.delete(`/api/aprendizado/notas/${created.body.id}`).expect(204);
+    await agent.delete(`/api/aprendizado/notas/${created.body.id}`).expect(404);
+  });
+
+  it('validates notes and reviews', async () => {
+    await seedBook();
+    const agent = await login();
+    for (const body of [{ md5: 'abc123' }, { md5: 'abc123', texto: '   ' }, { md5: 'abc123', texto: 'x'.repeat(2001) }, { md5: 1, texto: 'x' }]) {
+      const res = await agent.post('/api/aprendizado/notas').send(body).expect(400);
+      expect(typeof res.body.error).toBe('string');
+    }
+    await agent.post('/api/aprendizado/notas').send({ md5: 'nao-existe', texto: 'x' }).expect(404);
+    const { body } = await agent.post('/api/aprendizado/notas').send({ md5: 'abc123', texto: 'x' }).expect(201);
+    await agent.post(`/api/aprendizado/notas/${body.id}/revisao`).send({ lembrei: 'sim' }).expect(400);
+    await agent.post('/api/aprendizado/notas/9999/revisao').send({ lembrei: true }).expect(404);
+    await agent.post('/api/aprendizado/notas/abc/revisao').send({ lembrei: true }).expect(404);
+  });
+
+  it('sets the skill tree node of a book', async () => {
+    await seedBook();
+    const agent = await login();
+    expect((await agent.put('/api/aprendizado/livros/abc123/area').send({ area: 'compiladores' }).expect(200)).body.area).toBe('compiladores');
+    await agent.put('/api/aprendizado/livros/abc123/area').send({ area: 'nao-existe' }).expect(400);
+    await agent.put('/api/aprendizado/livros/abc123/area').send({}).expect(400);
+    await agent.put('/api/aprendizado/livros/nao-existe/area').send({ area: null }).expect(404);
+    await agent.get('/api/aprendizado/livros/nao-existe').expect(404);
+    expect((await agent.put('/api/aprendizado/livros/abc123/area').send({ area: null }).expect(200)).body.area).toBeNull();
+  });
+
+  it('marks books on a trail item', async () => {
+    await seedBook();
+    const agent = await login();
+    const res = await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/analise').send({ md5s: ['abc123'] }).expect(200);
+    expect(res.body.itens.find((i: { id: string }) => i.id === 'analise').estado).toBe('andamento');
+    await agent.put('/api/aprendizado/trilhas/nao-existe/itens/analise').send({ md5s: [] }).expect(404);
+    for (const body of [{ md5s: 'abc123' }, { md5s: [1] }, { md5s: ['abc123', 'abc123'] }, { md5s: ['nao-existe'] }]) {
+      await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/analise').send(body).expect(400);
+    }
+  });
+
+  it('accepts 2000 characters and rejects 2001', async () => {
+    await seedBook();
+    const agent = await login();
+    await agent.post('/api/aprendizado/notas').send({ md5: 'abc123', texto: 'x'.repeat(2000) }).expect(201);
+    await agent.post('/api/aprendizado/notas').send({ md5: 'abc123', texto: 'x'.repeat(2001) }).expect(400);
+  });
+
+  it('returns 404 for a non-numeric note id', async () => {
+    const agent = await login();
+    await agent.delete('/api/aprendizado/notas/abc').expect(404);
+    await agent.post('/api/aprendizado/notas/1.5/revisao').send({ lembrei: true }).expect(404);
+  });
+
+  it('distinguishes unknown trail items (404) from bad books (400)', async () => {
+    await seedBook();
+    const agent = await login();
+    await agent.put('/api/aprendizado/trilhas/nao-existe/itens/analise').send({ md5s: ['abc123'] }).expect(404);
+    await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/nao-existe').send({ md5s: ['abc123'] }).expect(404);
+    await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/analise').send({ md5s: ['nao-existe'] }).expect(400);
+    await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/analise').send({ md5s: ['abc123', 'abc123'] }).expect(400);
+  });
+
+  it('keeps area, notes and trails when the plugin imports again', async () => {
+    await seedBook();
+    const agent = await login();
+    await agent.put('/api/aprendizado/livros/abc123/area').send({ area: 'grafos' }).expect(200);
+    await agent.post('/api/aprendizado/notas').send({ md5: 'abc123', texto: 'x' }).expect(201);
+    await agent.put('/api/aprendizado/trilhas/ia-do-zero/itens/matematica').send({ md5s: ['abc123'] }).expect(200);
+    await sendImport({ books: [{ ...book, title: 'Duna 2' }], stats: pageStats(3) }).expect(200);
+    expect((await agent.get('/api/aprendizado/livros/abc123')).body).toMatchObject({ area: 'grafos', notas: [{ texto: 'x' }] });
+    expect(db.prepare('SELECT COUNT(*) AS n FROM trilha_livro').get()).toEqual({ n: 1 });
+  });
+});

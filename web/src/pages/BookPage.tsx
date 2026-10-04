@@ -9,6 +9,7 @@ import { Card } from '../components/Card';
 import Cover from '../components/Cover';
 import ProgressBar from '../components/ProgressBar';
 import StatusBadge from '../components/StatusBadge';
+import AprendizadoLivro from '../components/AprendizadoLivro';
 
 function EditForm({ book }: { book: BookDetail }) {
   const qc = useQueryClient();
@@ -313,6 +314,7 @@ export default function BookPage() {
           </ResponsiveContainer>
         </div>
       </Card>
+      <AprendizadoLivro book={b} />
       <Card title="Anotações"><EditForm book={b} /></Card>
       <MetadadosCard book={b} />
       <ExcluirLivro book={b} />
