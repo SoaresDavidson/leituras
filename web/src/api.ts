@@ -1,8 +1,9 @@
 import type { BookDetail, BookPatch, BookSummary, Dashboard, Foco, Habito, HabitoPatch } from '@leituras/shared';
 
 export class ApiError extends Error {
-  constructor(public status: number) {
-    super(`HTTP ${status}`);
+  // `message` is the server's `{ error }` text when there is one
+  constructor(public status: number, message = `HTTP ${status}`) {
+    super(message);
   }
 }
 
@@ -15,7 +16,10 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (res.status === 401 && path !== '/login' && path !== '/me') {
     window.location.assign('/login');
   }
-  if (!res.ok) throw new ApiError(res.status);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null) as { error?: unknown } | null;
+    throw new ApiError(res.status, typeof body?.error === 'string' ? body.error : undefined);
+  }
   return res.status === 204 ? (undefined as T) : res.json();
 }
 

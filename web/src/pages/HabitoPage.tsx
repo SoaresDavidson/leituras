@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { Habito, HabitoDia, HabitoMeta, HabitoNivel, HabitoPatch, NivelSequencia } from '@leituras/shared';
-import { getHabito, patchHabito } from '../api';
+import { ApiError, getHabito, patchHabito } from '../api';
 import { MONTHS, fmtHours } from '../format';
 import { Card } from '../components/Card';
 import Heatmap from '../components/Heatmap';
@@ -21,7 +21,11 @@ const daysBetween = (from: string, to: string) => Math.round((Date.parse(to) - D
 const fmtDay = (d: string) => `${Number(d.slice(8))} ${MONTHS[Number(d.slice(5, 7)) - 1]}`;
 const fmtMin = (m: number) => (m < 60 ? `${Math.round(m)} min` : fmtHours(m));
 const fmtMeta = (m: HabitoMeta) => [m.minutos && `${m.minutos} min`, m.paginas && `${m.paginas} págs`].filter(Boolean).join(' e ');
-const delta = (now: number, before: number) => (before === 0 ? '—' : `${now >= before ? '+' : ''}${Math.round(((now - before) / before) * 100)}%`);
+const capitalize = (t: string) => {
+  const [first = '', ...rest] = Array.from(t);
+  return first.toUpperCase() + rest.join('');
+};
+const delta = (now: number, before: number) => (before === 0 ? '—' : `${now > before ? '+' : ''}${Math.round(((now - before) / before) * 100)}%`);
 
 // Calendar color relative to the daily goal: < half, < goal, goal met, twice the goal
 function goalBucket(meta: HabitoMeta) {
@@ -35,6 +39,11 @@ function goalBucket(meta: HabitoMeta) {
     if (ratio < 1) return 2;
     return ratio < 2 ? 3 : 4;
   };
+}
+
+function ErroApi({ error }: { error: unknown }) {
+  const msg = error instanceof ApiError && !error.message.startsWith('HTTP ') ? error.message : 'Não foi possível salvar.';
+  return <span role="alert" className="text-sm text-red-600">{msg}</span>;
 }
 
 function useHabitoMutation() {
@@ -62,12 +71,12 @@ function Gatilho({ gatilho }: { gatilho: string }) {
             aria-label="Gatilho do hábito" className="min-w-0 flex-1 rounded border border-stone-300 bg-white px-2 py-1 dark:border-stone-700 dark:bg-stone-900" />
           <button disabled={save.isPending} className="rounded bg-emerald-600 px-3 py-1 text-sm font-medium text-white disabled:opacity-50">Salvar</button>
           <button type="button" onClick={() => setEditando(false)} className="text-sm text-stone-500 hover:underline">cancelar</button>
-          {save.isError && <span className="text-sm text-red-600">Gatilho inválido.</span>}
+          {save.isError && <ErroApi error={save.error} />}
         </form>
       ) : (
         <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
           <p className="text-lg font-semibold">
-            {gatilho ? `${gatilho[0].toUpperCase()}${gatilho.slice(1)}, eu leio.` : 'Prenda a leitura a algo que já acontece: “depois do café”, “antes de dormir”.'}
+            {gatilho ? `${capitalize(gatilho)}, eu leio.` : 'Prenda a leitura a algo que já acontece: “depois do café”, “antes de dormir”.'}
           </p>
           <button onClick={() => { setTexto(gatilho); setEditando(true); }} className="text-sm text-stone-500 hover:underline">
             {gatilho ? 'editar' : 'escrever gatilho'}
@@ -78,34 +87,56 @@ function Gatilho({ gatilho }: { gatilho: string }) {
   );
 }
 
+const METAS_FIELDS = [
+  { key: 'metaDiaMinutos', label: 'Dia (min)', nome: 'Meta diária em minutos', max: 600 },
+  { key: 'metaDiaPaginas', label: 'Dia (págs)', nome: 'Meta diária em páginas', max: 1000 },
+  { key: 'metaMesMinutos', label: 'Mês (min)', nome: 'Meta mensal em minutos', max: 18000 },
+  { key: 'metaMesPaginas', label: 'Mês (págs)', nome: 'Meta mensal em páginas', max: 30000 },
+] as const;
+type MetaKey = (typeof METAS_FIELDS)[number]['key'];
+
+// Returns the patch, or an error message when a field is empty, out of range or a goal is all 0
+function validarMetas(v: Record<MetaKey, string>): Required<Omit<HabitoPatch, 'gatilho'>> | string {
+  const out = {} as Record<MetaKey, number>;
+  for (const f of METAS_FIELDS) {
+    const raw = v[f.key].trim();
+    if (!/^\d+$/.test(raw) || Number(raw) > f.max) return `${f.nome} deve ser inteiro entre 0 e ${f.max}`;
+    out[f.key] = Number(raw);
+  }
+  if (out.metaDiaMinutos === 0 && out.metaDiaPaginas === 0) return 'A meta diária precisa de minutos ou páginas';
+  if (out.metaMesMinutos === 0 && out.metaMesPaginas === 0) return 'A meta mensal precisa de minutos ou páginas';
+  return out;
+}
+
 function AjustesMetas({ habito, onDone }: { habito: Habito; onDone: () => void }) {
-  const [v, setV] = useState({
-    metaDiaMinutos: habito.metas.dia.minutos,
-    metaDiaPaginas: habito.metas.dia.paginas,
-    metaMesMinutos: habito.metas.mes.minutos,
-    metaMesPaginas: habito.metas.mes.paginas,
+  const [v, setV] = useState<Record<MetaKey, string>>({
+    metaDiaMinutos: String(habito.metas.dia.minutos),
+    metaDiaPaginas: String(habito.metas.dia.paginas),
+    metaMesMinutos: String(habito.metas.mes.minutos),
+    metaMesPaginas: String(habito.metas.mes.paginas),
   });
+  const [erro, setErro] = useState<string | null>(null);
   const save = useHabitoMutation();
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    save.mutate(v, { onSuccess: onDone });
+    const patch = validarMetas(v);
+    if (typeof patch === 'string') { setErro(patch); return; }
+    setErro(null);
+    save.mutate(patch, { onSuccess: onDone });
   };
-  const field = (key: keyof typeof v, label: string, max: number) => (
-    <label className="block">{label}
-      <input type="number" min={0} max={max} value={v[key]} onChange={(e) => setV({ ...v, [key]: Number(e.target.value) })} className={`${input} block`} />
-    </label>
-  );
   return (
     <Card>
-      <form onSubmit={submit} className="flex flex-wrap items-end gap-3 text-sm">
-        {field('metaDiaMinutos', 'Dia (min)', 600)}
-        {field('metaDiaPaginas', 'Dia (págs)', 1000)}
-        {field('metaMesMinutos', 'Mês (min)', 18000)}
-        {field('metaMesPaginas', 'Mês (págs)', 30000)}
+      <form onSubmit={submit} noValidate className="flex flex-wrap items-end gap-3 text-sm">
+        {METAS_FIELDS.map((f) => (
+          <label key={f.key} className="block">{f.label}
+            <input type="number" inputMode="numeric" min={0} max={f.max} step={1} value={v[f.key]}
+              onChange={(e) => setV({ ...v, [f.key]: e.target.value })} className={`${input} block`} />
+          </label>
+        ))}
         <button disabled={save.isPending} className="rounded bg-emerald-600 px-3 py-1 font-medium text-white disabled:opacity-50">Salvar</button>
-        {save.isError && <span className="text-red-600">Valores inválidos: use 0 para desligar, mas não minutos e páginas juntos.</span>}
+        {erro ? <span role="alert" className="text-sm text-red-600">{erro}</span> : save.isError && <ErroApi error={save.error} />}
       </form>
-      <p className={`mt-2 ${muted}`}>0 desliga a parte. A meta é batida quando todas as partes ligadas são atingidas.</p>
+      <p className={`mt-2 ${muted}`}>0 desliga a parte, mas minutos e páginas de uma mesma meta não podem ficar os dois em 0. A meta é batida quando todas as partes ligadas são atingidas.</p>
     </Card>
   );
 }
@@ -156,9 +187,9 @@ function Sequencias({ habito }: { habito: Habito }) {
           const l = NIVEL_LABEL[n.nivel];
           return (
             <div key={n.nivel}>
-              <div className="flex items-baseline justify-between gap-2">
-                <span><b className={l.cor}>{l.nome}</b> <span className={muted}>{l.criterio}</span></span>
-                <span className="font-mono">{n.atual?.dias ?? 0} d <span className={muted}>· recorde {n.recorde?.dias ?? 0}</span></span>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                <span className="whitespace-nowrap"><b className={l.cor}>{l.nome}</b> <span className={muted}>{l.criterio}</span></span>
+                <span className="whitespace-nowrap font-mono">{n.atual?.dias ?? 0} d <span className={muted}>· recorde {n.recorde?.dias ?? 0}</span></span>
               </div>
               <ProgressBar value={((n.atual?.dias ?? 0) / max) * 100} />
             </div>
@@ -190,11 +221,11 @@ function Historico({ habito }: { habito: Habito }) {
         <ul className="space-y-2">
           {lista.map((s) => (
             <li key={s.inicio} className="flex items-center gap-2 text-sm">
-              <span className="w-28 shrink-0 font-mono text-stone-500">{fmtDay(s.inicio)} – {fmtDay(s.fim)}</span>
-              <div className="h-2 flex-1 overflow-hidden rounded bg-stone-200 dark:bg-stone-700">
+              <span className="shrink-0 whitespace-nowrap font-mono text-stone-500">{fmtDay(s.inicio)} – {fmtDay(s.fim)}</span>
+              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded bg-stone-200 dark:bg-stone-700">
                 <div className={`h-full ${s === n.atual ? 'bg-emerald-600' : 'bg-emerald-300 dark:bg-emerald-800'}`} style={{ width: `${(s.dias / max) * 100}%` }} />
               </div>
-              <span className="w-14 text-right font-mono">{s.dias} d{s.inicio === n.recorde?.inicio ? ' ★' : ''}</span>
+              <span className="shrink-0 whitespace-nowrap text-right font-mono">{s.dias} d{s.inicio === n.recorde?.inicio ? ' ★' : ''}</span>
             </li>
           ))}
         </ul>
@@ -214,7 +245,7 @@ function Padroes({ habito }: { habito: Habito }) {
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       <Card title="Melhor horário">
-        <div className="h-44">
+        <div className="h-44" role="img" aria-label={total === 0 ? 'Minutos por hora do dia: sem leitura' : `Minutos por hora do dia nos últimos 90 dias; pico às ${pico}h`}>
           <ResponsiveContainer>
             <BarChart data={horas}>
               <XAxis dataKey="label" interval={5} fontSize={11} />
@@ -232,7 +263,7 @@ function Padroes({ habito }: { habito: Habito }) {
         </p>
       </Card>
       <Card title="Por dia da semana">
-        <div className="h-44">
+        <div className="h-44" role="img" aria-label={`Média de minutos por dia da semana: ${semana.map((d) => `${d.label} ${d.min}`).join(', ')}`}>
           <ResponsiveContainer>
             <BarChart data={semana}>
               <XAxis dataKey="label" fontSize={11} />
@@ -264,13 +295,13 @@ function Comparacoes({ habito }: { habito: Habito }) {
         <div className="text-2xl font-bold">
           {fmtMin(totalAtual)}{' '}
           {semana.variacao != null && (
-            <span className={`text-base ${semana.variacao >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-              {semana.variacao >= 0 ? '+' : ''}{semana.variacao}%
+            <span className={`text-base ${semana.variacao > 0 ? 'text-emerald-600' : semana.variacao < 0 ? 'text-red-600' : 'text-stone-500'}`}>
+              {semana.variacao > 0 ? '+' : ''}{semana.variacao}%
             </span>
           )}
         </div>
         <div className={muted}>Variação contando só os dias até hoje nas duas semanas.</div>
-        <div className="mt-2 h-44">
+        <div className="mt-2 h-44" role="img" aria-label={`Minutos por dia: esta semana ${semana.atual.join(', ')}; semana passada ${semana.anterior.join(', ')}`}>
           <ResponsiveContainer>
             <BarChart data={dados}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -301,7 +332,7 @@ function Comparacoes({ habito }: { habito: Habito }) {
                   <td className="py-1">{nome}</td>
                   <td className="text-right font-mono">{antes.toLocaleString('pt-BR')}</td>
                   <td className="text-right font-mono">{agora.toLocaleString('pt-BR')}</td>
-                  <td className={`text-right font-mono ${agora >= antes ? 'text-emerald-600' : 'text-red-600'}`}>{delta(agora, antes)}</td>
+                  <td className={`text-right font-mono ${agora > antes ? 'text-emerald-600' : agora < antes ? 'text-red-600' : 'text-stone-500'}`}>{delta(agora, antes)}</td>
                 </tr>
               );
             })}
@@ -351,7 +382,8 @@ export default function HabitoPage() {
             <Historico habito={h} />
           </div>
           <Card title="Calendário (últimos 365 dias)">
-            <Heatmap daily={h.daily} bucketOf={goalBucket(h.metas.dia)} />
+            <Heatmap daily={h.daily} bucketOf={goalBucket(h.metas.dia)} ariaLabel="Calendário de leitura dos últimos 365 dias, colorido pela meta do dia"
+              label={(d) => `${fmtDay(d.date)}: ${d.minutes} min, ${d.pages} págs${d.metaBatida ? ' · meta batida' : ''}`} />
             <p className={`mt-2 ${muted}`}>
               <b>{h.daily.filter((d) => d.metaBatida).length}</b> dias com meta ({fmtMeta(h.metas.dia)}) em 365.
               Cores: menos da metade, quase, meta batida, o dobro.

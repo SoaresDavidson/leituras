@@ -122,12 +122,54 @@ describe('getHabito', () => {
     expect(h.porHora.reduce((a, b) => a + b)).toBe(18);
     // the 90-day window (07-06..10-03) has 13 Saturdays
     expect(h.porDiaSemana[5]).toBe(1);
-    expect(h.porDiaSemana[3]).toBeCloseTo(5 / 13); // 10-01 is a Thursday
+    expect(h.porDiaSemana[3]).toBe(0); // 10-01 is a Thursday: 5 / 13 min rounds to 0
+    expect(h.porDiaSemana.every(Number.isInteger)).toBe(true);
   });
 
   it('compares this week with last week up to the same weekday', () => {
     seed([...read('2026-09-28', 10), ...read(TODAY, 20, 100), ...read('2026-09-21', 15, 200), ...read('2026-09-27', 50, 300)]);
     expect(habito().semana).toEqual({ atual: [10, 0, 0, 0, 0, 20, 0], anterior: [15, 0, 0, 0, 0, 0, 50], variacao: 100 });
+  });
+
+  it('returns a null week variation when last week had no reading up to today', () => {
+    seed(read('2026-09-28', 10));
+    expect(habito().semana.variacao).toBeNull();
+  });
+
+  it('handles a week seen from a Monday and from a Sunday', () => {
+    seed([...read('2026-09-28', 10), ...read('2026-09-21', 20, 100), ...read('2026-09-22', 30, 200)]);
+    expect(getHabito(db, TZ, Date.parse('2026-09-28T15:00:00Z')).semana)
+      .toEqual({ atual: [10, 0, 0, 0, 0, 0, 0], anterior: [20, 30, 0, 0, 0, 0, 0], variacao: -50 });
+
+    db = openDb(':memory:');
+    seed([...read('2026-09-28', 10), ...read('2026-10-04', 20, 100), ...read('2026-09-21', 15, 200), ...read('2026-09-27', 15, 300)]);
+    expect(getHabito(db, TZ, Date.parse('2026-10-04T15:00:00Z')).semana)
+      .toEqual({ atual: [10, 0, 0, 0, 0, 0, 20], anterior: [15, 0, 0, 0, 0, 0, 15], variacao: 0 });
+  });
+
+  it('keeps the current streak alive when the last day was the day before yesterday, not three days ago', () => {
+    seed(read('2026-10-01', 20));
+    expect(nivel('prata').atual).toEqual({ inicio: '2026-10-01', fim: '2026-10-01', dias: 1 });
+
+    db = openDb(':memory:');
+    seed(read('2026-09-30', 20));
+    expect(nivel('prata').atual).toBeNull();
+    expect(nivel('prata').historico).toEqual([{ inicio: '2026-09-30', fim: '2026-09-30', dias: 1 }]);
+  });
+
+  it('requires twice the page goal for ouro', () => {
+    setSetting('habito.meta_dia_minutos', '0');
+    setSetting('habito.meta_dia_paginas', '10');
+    seed([...readAt('2026-10-02T15:00:00Z', 1, 15), ...readAt('2026-10-03T12:00:00Z', 100, 119)]); // 15 pages, then 20 pages at 9:00
+    expect(nivel('prata').atual).toEqual({ inicio: '2026-10-02', fim: TODAY, dias: 2 });
+    expect(nivel('ouro').atual).toEqual({ inicio: TODAY, fim: TODAY, dias: 1 });
+  });
+
+  it('falls back to the default goal when a stored value is not an integer', () => {
+    setSetting('habito.meta_dia_minutos', 'abc');
+    setSetting('habito.meta_mes_minutos', '2.5');
+    setSetting('habito.meta_dia_paginas', '');
+    expect(habito().metas).toEqual({ dia: { minutos: 20, paginas: 0 }, mes: { minutos: 600, paginas: 0 } });
   });
 
   it('compares the last 30 days with the 30 days ending 90 days ago', () => {

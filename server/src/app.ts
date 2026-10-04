@@ -37,26 +37,31 @@ function parseFocoPatch(body: unknown): { limite?: number; prazoDias?: number } 
   return { limite: limite as number | undefined, prazoDias: prazoDias as number | undefined };
 }
 
-const HABITO_RANGES = { metaDiaMinutos: 600, metaDiaPaginas: 1000, metaMesMinutos: 18000, metaMesPaginas: 30000 } as const;
+const HABITO_FIELDS = {
+  metaDiaMinutos: { label: 'Meta diária em minutos', max: 600 },
+  metaDiaPaginas: { label: 'Meta diária em páginas', max: 1000 },
+  metaMesMinutos: { label: 'Meta mensal em minutos', max: 18000 },
+  metaMesPaginas: { label: 'Meta mensal em páginas', max: 30000 },
+} as const;
 
 // Returns an error message (pt-BR) or the parsed patch; `current` is used to reject goals left all at 0
 function parseHabitoPatch(body: unknown, current: ReturnType<typeof readHabitoSettings>): HabitoPatch | string {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) return 'Ajustes inválidos';
   const input = body as Record<string, unknown>;
   const patch: HabitoPatch = {};
-  for (const [field, max] of Object.entries(HABITO_RANGES)) {
+  for (const [field, { label, max }] of Object.entries(HABITO_FIELDS)) {
     const value = input[field];
     if (value === undefined) continue;
-    if (!isIntIn(value, 0, max)) return 'Meta inválida';
-    patch[field as keyof typeof HABITO_RANGES] = value as number;
+    if (!isIntIn(value, 0, max)) return `${label} deve ser inteiro entre 0 e ${max}`;
+    patch[field as keyof typeof HABITO_FIELDS] = value as number;
   }
   if (input.gatilho !== undefined) {
-    if (typeof input.gatilho !== 'string' || input.gatilho.trim().length > GATILHO_MAX) return `O gatilho deve ter até ${GATILHO_MAX} caracteres`;
+    if (typeof input.gatilho !== 'string' || input.gatilho.trim().length > GATILHO_MAX) return `O gatilho deve ser um texto de até ${GATILHO_MAX} caracteres`;
     patch.gatilho = input.gatilho.trim();
   }
   const { dia, mes } = current.metas;
-  if ((patch.metaDiaMinutos ?? dia.minutos) === 0 && (patch.metaDiaPaginas ?? dia.paginas) === 0) return 'A meta do dia precisa de minutos ou páginas';
-  if ((patch.metaMesMinutos ?? mes.minutos) === 0 && (patch.metaMesPaginas ?? mes.paginas) === 0) return 'A meta do mês precisa de minutos ou páginas';
+  if ((patch.metaDiaMinutos ?? dia.minutos) === 0 && (patch.metaDiaPaginas ?? dia.paginas) === 0) return 'A meta diária precisa de minutos ou páginas';
+  if ((patch.metaMesMinutos ?? mes.minutos) === 0 && (patch.metaMesPaginas ?? mes.paginas) === 0) return 'A meta mensal precisa de minutos ou páginas';
   return patch;
 }
 

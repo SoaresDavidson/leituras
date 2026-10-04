@@ -233,6 +233,24 @@ describe('habito api', () => {
     expect(db.prepare("SELECT COUNT(*) AS n FROM setting WHERE key LIKE 'habito.%'").get()).toEqual({ n: 0 });
   });
 
+  it('names the field and the range in error messages', async () => {
+    const agent = await login();
+    const cases: [unknown, string][] = [
+      [[{ metaDiaMinutos: 10 }], 'Ajustes inválidos'],
+      [{ gatilho: 42 }, 'O gatilho deve ser um texto de até 140 caracteres'],
+      [{ metaDiaMinutos: 601 }, 'Meta diária em minutos deve ser inteiro entre 0 e 600'],
+      [{ metaDiaPaginas: 1.5 }, 'Meta diária em páginas deve ser inteiro entre 0 e 1000'],
+      [{ metaMesMinutos: -1 }, 'Meta mensal em minutos deve ser inteiro entre 0 e 18000'],
+      [{ metaMesPaginas: '5' }, 'Meta mensal em páginas deve ser inteiro entre 0 e 30000'],
+      [{ metaDiaMinutos: 0 }, 'A meta diária precisa de minutos ou páginas'],
+      [{ metaMesMinutos: 0 }, 'A meta mensal precisa de minutos ou páginas'],
+    ];
+    for (const [body, error] of cases) {
+      const res = await agent.patch('/api/habito').send(body as object).expect(400);
+      expect(res.body).toEqual({ error });
+    }
+  });
+
   it('keeps habit settings when the plugin imports again', async () => {
     const agent = await login();
     await agent.patch('/api/habito').send({ metaDiaMinutos: 30, gatilho: 'antes de dormir' }).expect(200);

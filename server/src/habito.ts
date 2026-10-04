@@ -43,7 +43,10 @@ export function computeStreaks(days: Iterable<string>, today: string): { atual: 
 
 export function readHabitoSettings(db: Db): { metas: { dia: HabitoMeta; mes: HabitoMeta }; gatilho: string } {
   const get = (key: string) => (db.prepare('SELECT value FROM setting WHERE key = ?').get(key) as { value: string } | undefined)?.value;
-  const num = (key: string, fallback: number) => Number(get(key) ?? fallback);
+  const num = (key: string, fallback: number) => {
+    const raw = get(key);
+    return raw != null && /^\d+$/.test(raw) ? Number(raw) : fallback;
+  };
   return {
     metas: {
       dia: { minutos: num(SETTING_KEYS.metaDiaMinutos, DEFAULT_METAS.dia.minutos), paginas: num(SETTING_KEYS.metaDiaPaginas, DEFAULT_METAS.dia.paginas) },
@@ -161,7 +164,7 @@ export function getHabito(db: Db, timeZone: string, now = Date.now()): Habito {
     niveis,
     daily,
     porHora: porHora.map(Math.round),
-    porDiaSemana,
+    porDiaSemana: porDiaSemana.map(Math.round),
     semana: { atual, anterior, variacao: pct(upToToday(atual), upToToday(anterior)) },
     vsPassado: {
       atual: janela(addDays(today, -(WINDOW_DAYS - 1)), today),

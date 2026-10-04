@@ -58,6 +58,7 @@ Sem migração: só a tabela `setting` existente, com padrão quando a chave nã
 | `habito.meta_mes_paginas` | 0 | inteiro 0–30000 |
 | `habito.gatilho` | `''` | texto até 140 caracteres (espaços nas pontas removidos) |
 
+Valor guardado que não seja inteiro (vazio, texto, decimal) é ignorado e vale o padrão.
 Depois de aplicar uma alteração, minutos e páginas de uma mesma meta não podem ficar os dois em 0.
 A importação do plugin não toca nessas chaves.
 
@@ -102,7 +103,7 @@ export type Habito = {
   niveis: HabitoNivel[]; // bronze, prata, ouro
   daily: HabitoDia[]; // últimos 365 dias, mais antigo primeiro
   porHora: number[]; // 24 valores, minutos nos últimos 90 dias
-  porDiaSemana: number[]; // 7 valores seg..dom, média de minutos por dia nos últimos 90 dias
+  porDiaSemana: number[]; // 7 valores seg..dom, média de minutos por dia nos últimos 90 dias, arredondada
   semana: { atual: number[]; anterior: number[]; variacao: number | null };
   vsPassado: { atual: HabitoJanela; antes: HabitoJanela };
   consistencia: { pontuacao: number; diasComMeta: number; diasComLeitura: number; inicio: string; fim: string };
@@ -113,7 +114,10 @@ export type HabitoPatch = Partial<{ metaDiaMinutos: number; metaDiaPaginas: numb
 1. **`GET /api/habito`** → `Habito`.
 2. **`PATCH /api/habito`** com `HabitoPatch` → `Habito` atualizado. 400 `{ error }` se o corpo não for objeto,
    se um número não for inteiro na faixa, se o gatilho não for texto ou passar de 140 caracteres, ou se a
-   meta resultante ficar com minutos e páginas em 0.
+   meta resultante ficar com minutos e páginas em 0. A mensagem nomeia o campo e a faixa, por exemplo
+   "Meta diária em minutos deve ser inteiro entre 0 e 600" ou "A meta mensal precisa de minutos ou páginas".
+   O formulário valida as mesmas regras antes de enviar (campo vazio não vira 0) e mostra a mensagem do
+   servidor quando ele recusa.
 
 No cliente, a mutação grava a resposta na query `['habito']`.
 
