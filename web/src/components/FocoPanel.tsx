@@ -7,6 +7,7 @@ import { fmtDate, fmtHours } from '../format';
 import { Card, Stat } from './Card';
 import Cover from './Cover';
 import ProgressBar from './ProgressBar';
+import { StatusQuickEdit } from './StatusSelect';
 
 const RETA_FINAL = 75;
 
@@ -62,6 +63,7 @@ function AbertoItem({ book }: { book: FocoBook }) {
           </div>
         </div>
       </Link>
+      <div className="pb-3 pl-14"><StatusQuickEdit book={book} /></div>
     </li>
   );
 }
