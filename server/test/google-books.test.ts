@@ -13,7 +13,7 @@ describe('fetchGoogleBooks', () => {
     const [url, init] = f.mock.calls[0];
     const u = new URL(url);
     expect(u.origin + u.pathname).toBe('https://www.googleapis.com/books/v1/volumes');
-    expect(u.searchParams.get('q')).toBe('intitle:Duna+inauthor:Frank Herbert');
+    expect(u.searchParams.get('q')).toBe('Duna inauthor:Frank Herbert');
     expect(u.searchParams.get('maxResults')).toBe('1');
     expect(u.searchParams.get('key')).toBe('k3y');
     expect(u.searchParams.get('fields')).toContain('volumeInfo');
@@ -23,7 +23,7 @@ describe('fetchGoogleBooks', () => {
   it('omits inauthor when there is no author', async () => {
     const f = fakeFetch({});
     await fetchGoogleBooks({ title: 'Duna' }, 'k', asFetch(f));
-    expect(new URL(f.mock.calls[0][0]).searchParams.get('q')).toBe('intitle:Duna');
+    expect(new URL(f.mock.calls[0][0]).searchParams.get('q')).toBe('Duna');
   });
 
   it('normalizes the first volume', async () => {

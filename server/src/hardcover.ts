@@ -4,7 +4,9 @@ const HARDCOVER_URL = 'https://api.hardcover.app/v1/graphql';
 const TIMEOUT_MS = 8000;
 const MAX_ASSUNTOS = 8;
 
-const SEARCH = 'query Search($q: String!) { search(query: $q, query_type: "Book", per_page: 1) { results } }';
+// Text relevance ranks adaptations whose title repeats the author (e.g. comics)
+// above the original work; popularity picks the canonical edition
+const SEARCH = 'query Search($q: String!) { search(query: $q, query_type: "Book", per_page: 1, sort: "users_count:desc") { results } }';
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter(Boolean) : []);

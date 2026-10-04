@@ -15,7 +15,8 @@ export async function fetchGoogleBooks(
   fetchFn: typeof fetch = fetch,
 ): Promise<Metadados | null> {
   const params = new URLSearchParams({
-    q: `intitle:${query.title}${query.author ? `+inauthor:${query.author}` : ''}`,
+    // A leading intitle: returns nothing; free-text title plus inauthor: matches well
+    q: query.author ? `${query.title} inauthor:${query.author}` : query.title,
     maxResults: '1',
     key: apiKey,
     fields: 'items(volumeInfo(title,authors,pageCount,publishedDate,categories))',
