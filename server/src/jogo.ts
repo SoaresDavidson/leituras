@@ -5,8 +5,10 @@ import type {
 import { listBookDetails, toSummary } from './books';
 import { addDays, dayKey, daysBetween } from './dates';
 import type { Db } from './db';
-import { forecast, RETA_FINAL_PROGRESS } from './foco';
-import { BRONZE_MINUTOS, computeStreaks, hourOf, meets, readHabitoSettings, weekdayOf } from './habito';
+import { forecast, progressAt, RETA_FINAL_PROGRESS } from './foco';
+import {
+  BRONZE_MINUTOS, computeStreaks, dailyTotals, DEFAULT_METAS, hourOf, meets, readHabitoSettings, weekdayOf, type PageStatRow,
+} from './habito';
 import {
   CARTAS, CHEFE_PAGINAS, CLASSES, CLASSES_JANELA_DIAS, MEDALHAS, RELAMPAGO_ALVOS, RELAMPAGO_PRAZOS, SESSAO_LONGA_MINUTOS,
   type CartaId, type ClasseId, type MedalhaId,
@@ -56,22 +58,26 @@ type Dia = {
   livros: Map<string, { segundos: number; paginas: Set<number> }>;
 };
 type Sessao = { dia: string; segundos: number };
-type Ontem = { progress: number; lastReadAt: string | null; status: ReadingStatus };
+type Ontem = { progress: number; lastReadAt: string | null; status: ReadingStatus; arquivado: boolean };
 
 export type Contexto = {
   hoje: string;
   hora: number;
   metas: { dia: HabitoMeta; mes: HabitoMeta };
   dias: Map<string, Dia>; // only days with reading
+  totais: (day: string) => HabitoMeta; // minutes and distinct pages, same as the habit page
   sessoes: Sessao[]; // oldest first
-  livros: BookDetail[];
+  sessoesPorDia: Map<string, Sessao[]>;
+  livros: BookDetail[]; // sorted by md5 so draws do not depend on today's reading order
   ontem: Map<string, Ontem>; // book state at the end of yesterday
 };
 
+// A goal stored with both parts at 0 would be met by any day: use the default instead
+const metaValida = (meta: HabitoMeta, padrao: HabitoMeta) => (meta.minutos === 0 && meta.paginas === 0 ? padrao : meta);
+
 export function contexto(db: Db, timeZone: string, now = Date.now()): Contexto {
   const hoje = dayKey(now / 1000, timeZone);
-  const rows = db.prepare('SELECT book_md5, page, start_time, duration FROM page_stat ORDER BY start_time').all() as
-    { book_md5: string; page: number; start_time: number; duration: number }[];
+  const rows = db.prepare('SELECT book_md5, page, start_time, duration FROM page_stat ORDER BY start_time').all() as PageStatRow[];
 
   const dias = new Map<string, Dia>();
   const sessoes: Sessao[] = [];
@@ -99,27 +105,44 @@ export function contexto(db: Db, timeZone: string, now = Date.now()): Contexto {
     lastEnd = row.start_time + row.duration;
   }
 
-  const livros = listBookDetails(db, timeZone, now);
+  const sessoesPorDia = new Map<string, Sessao[]>();
+  for (const s of sessoes) sessoesPorDia.set(s.dia, [...(sessoesPorDia.get(s.dia) ?? []), s]);
+
+  const livros = listBookDetails(db, timeZone, now).sort((a, b) => a.md5.localeCompare(b.md5));
+  // Yesterday's state comes only from dated data: the manual status has no date, so it is ignored here,
+  // and an archive counts only if it was made before today
+  const arquivadoEm = new Map((db.prepare('SELECT md5, arquivado_em FROM book').all() as { md5: string; arquivado_em: string | null }[])
+    .map((r) => [r.md5, r.arquivado_em]));
   const ontemDia = addDays(hoje, -1);
-  const ontem = new Map(livros.map((b) => {
+  const ontem = new Map(livros.map((b): [string, Ontem] => {
     const last = b.progressTimeline.filter((p) => p.date < hoje).at(-1);
     const progress = last?.progress ?? 0;
     const lastReadAt = last?.date ?? null;
-    const status = computeStatus({ progress, lastReadAt, today: ontemDia, statusManual: b.statusManual });
-    return [b.md5, { progress, lastReadAt, status: b.arquivado && status === 'lendo' ? 'pausado' : status }];
+    const em = arquivadoEm.get(b.md5) ?? null;
+    const arquivado = em != null && em < hoje && (lastReadAt == null || lastReadAt <= em);
+    const status = computeStatus({ progress, lastReadAt, today: ontemDia, statusManual: null });
+    return [b.md5, { progress, lastReadAt, arquivado, status: arquivado && status === 'lendo' ? 'pausado' : status }];
   }));
 
-  return { hoje, hora: hourOf(now / 1000, timeZone), metas: readHabitoSettings(db).metas, dias, sessoes, livros, ontem };
+  const { metas } = readHabitoSettings(db);
+  return {
+    hoje,
+    hora: hourOf(now / 1000, timeZone),
+    metas: { dia: metaValida(metas.dia, DEFAULT_METAS.dia), mes: metaValida(metas.mes, DEFAULT_METAS.mes) },
+    dias,
+    totais: dailyTotals(rows, timeZone).diaDe,
+    sessoes,
+    sessoesPorDia,
+    livros,
+    ontem,
+  };
 }
 
 // ---- helpers ----
 
 const range = (from: string, to: string) => (from > to ? [] : Array.from({ length: daysBetween(from, to) + 1 }, (_, i) => addDays(from, i)));
 const minutos = (segundos: number) => Math.round(segundos / 60);
-const totais = (ctx: Contexto, day: string): HabitoMeta => {
-  const dia = ctx.dias.get(day);
-  return { minutos: minutos(dia?.segundos ?? 0), paginas: dia?.paginas.size ?? 0 };
-};
+const totais = (ctx: Contexto, day: string): HabitoMeta => ctx.totais(day);
 const soma = (ctx: Contexto, days: string[]) =>
   days.map((d) => totais(ctx, d)).reduce((a, t) => ({ minutos: a.minutos + t.minutos, paginas: a.paginas + t.paginas }), { minutos: 0, paginas: 0 });
 const leu = (t: HabitoMeta) => t.minutos > 0 || t.paginas > 0;
@@ -134,7 +157,7 @@ const ultimoDia = (ym: string) => addDays(`${addDays(`${ym}-28`, 4).slice(0, 7)}
 const mesAnterior = (ym: string) => addDays(`${ym}-01`, -1).slice(0, 7);
 const mesAnoAnterior = (ym: string) => `${Number(ym.slice(0, 4)) - 1}${ym.slice(4)}`;
 
-const sessoesDoDia = (ctx: Contexto, day: string) => ctx.sessoes.filter((s) => s.dia === day);
+const sessoesDoDia = (ctx: Contexto, day: string) => ctx.sessoesPorDia.get(day) ?? [];
 const maiorSessaoHoje = (ctx: Contexto) => Math.max(0, ...sessoesDoDia(ctx, ctx.hoje).map((s) => minutos(s.segundos)));
 const minutosHoje = (ctx: Contexto, hora: (h: number) => boolean) =>
   minutos(ctx.dias.get(ctx.hoje)?.porHora.reduce((a, s, h) => a + (hora(h) ? s : 0), 0) ?? 0);
@@ -143,7 +166,7 @@ const livroHoje = (ctx: Contexto, md5: string) => ctx.dias.get(ctx.hoje)?.livros
 const abertosOntem = (ctx: Contexto) => ctx.livros.filter((b) => ctx.ontem.get(b.md5)!.status === 'lendo');
 const paradosOntem = (ctx: Contexto) => ctx.livros.filter((b) => {
   const o = ctx.ontem.get(b.md5)!;
-  return o.status === 'pausado' && !b.arquivado && o.lastReadAt != null;
+  return o.status === 'pausado' && !o.arquivado && o.lastReadAt != null;
 });
 
 // First item with the best value; ties keep the earliest
@@ -199,7 +222,7 @@ export function desafiosSemana(ctx: Contexto): Desafio[] {
   // 1.1 × the weekly average of the 4 previous weeks, rounded up to tens (integer math avoids 1.1 float noise)
   const antes = soma(ctx, range(addDays(inicio, -28), addDays(inicio, -1))).paginas;
   const alvoPaginas = Math.max(50, Math.ceil((antes * 11) / 400) * 10);
-  const longas = ctx.sessoes.filter((s) => s.dia >= inicio && s.dia <= ctx.hoje && minutos(s.segundos) >= SESSAO_LONGA_MINUTOS).length;
+  const longas = range(inicio, ctx.hoje).flatMap((d) => sessoesDoDia(ctx, d)).filter((s) => minutos(s.segundos) >= SESSAO_LONGA_MINUTOS).length;
   return [
     { id: 'dias-meta', titulo: 'Bater a meta do dia em 5 dias', ...periodo, ...prog(dias.filter((t) => meets(t, ctx.metas.dia)).length, 5, 'dias') },
     { id: 'paginas', titulo: `Ler ${alvoPaginas} páginas na semana`, ...periodo, ...prog(dias.reduce((a, t) => a + t.paginas, 0), alvoPaginas, 'págs') },
@@ -243,7 +266,13 @@ const getSetting = (db: Db, key: string) => (db.prepare('SELECT value FROM setti
 
 function cartaDoDia(db: Db, ctx: Contexto): CartaDesafio {
   const trocada = getSetting(db, CARTA_SETTING) === ctx.hoje;
-  const id = embaralhar(CARTAS.map((c) => c.id), `carta:${ctx.hoje}`)[trocada ? 1 : 0];
+  // Cards that need books the library does not have are left out of the deck
+  const possivel: Record<CartaId, boolean> = {
+    'antes-9h': true, noite: true, 'trinta-paginas': true, 'sessao-25': true,
+    'dois-livros': ctx.livros.length >= 2,
+    resgate: paradosOntem(ctx).length > 0,
+  };
+  const id = embaralhar(CARTAS.map((c) => c.id).filter((c) => possivel[c]), `carta:${ctx.hoje}`)[trocada ? 1 : 0];
   return { ...cartas(ctx).find((c) => c.id === id)!, trocada, podeTrocar: !trocada };
 }
 
@@ -263,8 +292,6 @@ function relampago(ctx: Contexto): DesafioRelampago {
 }
 
 // ---- bosses and ghost race ----
-
-const progressAt = (b: BookDetail, day: string) => [...b.progressTimeline].reverse().find((p) => p.date <= day)?.progress ?? 0;
 
 function chefes(ctx: Contexto): { chefes: Chefe[]; chefesDerrotados: ChefeDerrotado[] } {
   const vivos = ctx.livros
@@ -317,7 +344,7 @@ function corrida(ctx: Contexto, id: CorridaFantasma['id'], mesFantasma: string):
 function classes(ctx: Contexto): ClasseLeitor[] {
   const inicio = addDays(ctx.hoje, -(CLASSES_JANELA_DIAS - 1));
   const dias = range(inicio, ctx.hoje).flatMap((d) => ctx.dias.get(d) ?? []);
-  const sessoes = ctx.sessoes.filter((s) => s.dia >= inicio && s.dia <= ctx.hoje);
+  const sessoes = range(inicio, ctx.hoje).flatMap((d) => sessoesDoDia(ctx, d));
   const total = dias.reduce((a, d) => a + d.segundos, 0);
   const share = (hora: (h: number) => boolean) =>
     total === 0 ? 0 : (100 * dias.reduce((a, d) => a + d.porHora.reduce((s, v, h) => s + (hora(h) ? v : 0), 0), 0)) / total;

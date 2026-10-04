@@ -236,8 +236,9 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
   api.get('/jogo', (_req, res) => { res.json(getJogo(db, config.timeZone)); });
 
   api.post('/jogo/carta/trocar', (_req, res) => {
-    if (!trocarCarta(db, config.timeZone)) { res.status(409).json({ error: 'A carta de hoje já foi trocada' }); return; }
-    res.json(getJogo(db, config.timeZone));
+    const now = Date.now(); // one instant, so a swap near midnight answers for the same day
+    if (!trocarCarta(db, config.timeZone, now)) { res.status(409).json({ error: 'A carta de hoje já foi trocada' }); return; }
+    res.json(getJogo(db, config.timeZone, now));
   });
 
   api.get('/books/:md5/cover', (req, res) => {

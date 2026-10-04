@@ -19,9 +19,11 @@ dado guardado é o dia em que a carta foi trocada.
 |---|---|---|
 | Onde fica | Página nova `/conquistas`, endpoint próprio `GET /api/jogo` | Não mexe no formato do `GET /api/dashboard` |
 | Sorteios | Pseudoaleatório determinístico: FNV-1a da semente (ex. `carta:2026-10-03`) alimenta um mulberry32; `sortear` embaralha (Fisher-Yates) e pega o primeiro | Mesmo dia, mesmos dados ⇒ mesmo resultado, sem guardar nada |
-| Estabilidade no dia | Missões que citam um livro escolhem o livro pelo estado **até ontem** (progresso e status do fim de ontem) | Ler hoje não troca a missão no meio do dia |
+| Estabilidade no dia | Missões que citam um livro escolhem o livro pelo estado **até ontem** (progresso e status do fim de ontem); os candidatos são ordenados por md5 antes do sorteio | Ler, arquivar ou mudar o status hoje não troca a missão no meio do dia |
+| Status manual no estado de ontem | Ignorado: o status de ontem é sempre o calculado (`computeStatus` sem `statusManual`); o arquivamento só conta se `arquivado_em` for anterior a hoje | O status manual não tem data, então não dá para saber se valia ontem |
 | Progresso | Sempre com os dados de hoje (ou da semana/mês corrente); `atual` não é cortado no alvo | O cliente limita a barra; o número real é mais honesto |
-| Meta do dia e do mês | Lidas de `readHabitoSettings`; "meta batida" usa `meets` exportado de `habito.ts` | Sem duplicar regra de meta |
+| Meta do dia e do mês | Lidas de `readHabitoSettings`; "meta batida" usa `meets` exportado de `habito.ts`; uma meta guardada com minutos e páginas em 0 vale como a meta padrão (`DEFAULT_METAS`) | Sem duplicar regra de meta; meta toda em 0 seria cumprida por qualquer dia |
+| Reaproveitamento | Minutos e páginas por dia vêm de `dailyTotals` (`habito.ts`); progresso num dia vem de `progressAt` (`foco.ts`) | Mesmo arredondamento das outras páginas |
 | Sequências | `computeStreaks` de `habito.ts` sobre dias com ≥ 5 min (nível bronze) | Mesma regra dos dois dias da página Hábito |
 | Sessão | Leituras (todas os livros) separadas por mais de 30 min começam sessão nova (`SESSION_GAP_SECONDS` exportado de `stats.ts`); a sessão pertence ao dia em que começou | Mesma folga usada nas sessões por livro |
 | Hora de uma leitura | Hora local de `start_time` (`hourOf` exportado de `habito.ts`) | Igual ao "melhor horário" |
@@ -96,7 +98,10 @@ Sorteado com a semente `mes:<YYYY-MM>`; período do dia 1 ao último dia do mês
 Baralho fixo (`CARTAS`): `antes-9h` "Ler 15 min antes das 9h", `noite` "Ler 15 min depois das 21h",
 `trinta-paginas` "Ler 30 páginas hoje", `sessao-25` "Uma sessão de 25 min sem pausa",
 `dois-livros` "Ler 2 livros diferentes hoje", `resgate` "Ler 10 min de um livro parado" (parado ontem).
-O baralho é embaralhado com a semente `carta:<hoje>`; a carta do dia é a primeira, ou a segunda depois da troca.
+Cartas impossíveis com os livros que existem saem do baralho do dia: `resgate` sem livro parado ontem e
+`dois-livros` com menos de dois livros. As cartas de horário (`antes-9h`, `noite`) ficam o dia todo, para a carta
+não mudar com a hora. O baralho restante é embaralhado com a semente `carta:<hoje>`; a carta do dia é a primeira,
+ou a segunda depois da troca.
 
 ### Desafio relâmpago
 
@@ -210,12 +215,14 @@ Página `web/src/pages/ConquistasPage.tsx`, link "Conquistas" no cabeçalho. Rea
 - Missões: três, a primeira é a meta (usa a meta do hábito); a missão de livro usa o livro aberto ontem;
   missões gerais quando não há livros.
 - Desafios da semana e do mês: cada regra e o período; alvo de páginas a partir das semanas anteriores.
-- Carta: troca uma vez por dia e reinicia no dia seguinte; progresso de cada carta.
-- Relâmpago: `ativo`, `feito` e `perdido`.
+- Carta: troca uma vez por dia e reinicia no dia seguinte; progresso de cada carta; cartas impossíveis não saem.
+- Estabilidade: ler qualquer candidato hoje, mudar o status manual ou arquivar hoje não troca a missão de livro.
+- Meta guardada toda em 0 cai na meta padrão.
+- Relâmpago: `ativo`, `feito` e `perdido`, inclusive exatamente na hora do prazo.
 - Chefes: vida, dano por dia, livro de 399 págs fora, derrotados.
-- Fantasma: páginas acumuladas e dias depois de hoje nulos.
+- Fantasma: páginas acumuladas, dias depois de hoje nulos, mês de 31 dias contra fevereiro e 2028-02 contra 2027-02.
 - Classes: maratonista, noturno e `null` sem leitura.
-- Medalhas: desbloqueio com data, progresso e próxima conquista; recordes.
+- Medalhas: desbloqueio com data (inclusive sequência com um dia de folga), progresso e próxima conquista; recordes.
 
 Em `api.test.ts`: as rotas exigem sessão; `GET` devolve o bloco; a segunda troca de carta no dia dá 409;
 a importação do plugin não altera a troca.

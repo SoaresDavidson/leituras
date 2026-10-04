@@ -17,10 +17,12 @@ export function readFocoSettings(db: Db): { limite: number; prazoDias: number } 
 }
 
 // Pace = distinct pages gained over the last 14 calendar days, read off the progress timeline
+// Progress (0-100) at the end of `day`, read off the progress timeline
+export const progressAt = (book: BookDetail, day: string) => [...book.progressTimeline].reverse().find((p) => p.date <= day)?.progress ?? 0;
+
 export function forecast(book: BookDetail, today: string): { previsao: string | null; minutosRestantes: number | null } {
   const since = addDays(today, -FORECAST_WINDOW_DAYS);
-  const progressAt = (day: string) => [...book.progressTimeline].reverse().find((p) => p.date <= day)?.progress ?? 0;
-  const pagesRecent = (book.pages * (book.progress - progressAt(since))) / 100;
+  const pagesRecent = (book.pages * (book.progress - progressAt(book, since))) / 100;
   if (book.pages <= 0 || pagesRecent <= 0) return { previsao: null, minutosRestantes: null };
 
   const minutesRecent = book.daily.filter((d) => d.date > since).reduce((sum, d) => sum + d.minutes, 0);

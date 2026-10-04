@@ -69,9 +69,14 @@ function Missoes({ jogo }: { jogo: Jogo }) {
 
 function Carta({ jogo }: { jogo: Jogo }) {
   const qc = useQueryClient();
-  const trocar = useMutation({ mutationFn: trocarCarta, onSuccess: (j) => qc.setQueryData(['jogo'], j) });
+  const trocar = useMutation({
+    mutationFn: trocarCarta,
+    onSuccess: (j) => qc.setQueryData(['jogo'], j),
+    // the server state may differ from what is on screen (e.g. swapped in another tab): reload it
+    onError: () => qc.invalidateQueries({ queryKey: ['jogo'] }),
+  });
   const { carta } = jogo;
-  const erro = trocar.error instanceof ApiError && !trocar.error.message.startsWith('HTTP ') ? trocar.error.message : 'Não foi possível trocar a carta.';
+  const erro = trocar.error instanceof ApiError && trocar.error.status === 409 ? 'A carta de hoje já foi trocada.' : 'Não foi possível trocar a carta.';
   return (
     <Card title="Carta de desafio">
       <div className="mb-3 flex min-h-20 items-center rounded-md border border-dashed border-amber-400 bg-amber-50 p-3 font-semibold dark:border-amber-700 dark:bg-amber-950">
@@ -201,7 +206,8 @@ function Fantasma({ jogo }: { jogo: Jogo }) {
         Você em {fmtMes(c.mes)} contra você em {fmtMes(c.mesFantasma)}, em páginas acumuladas.{' '}
         {diff === 0 ? <b>Empate com o fantasma.</b> : <b className={diff > 0 ? 'text-emerald-600' : 'text-red-600'}>{Math.abs(diff).toLocaleString('pt-BR')} págs {diff > 0 ? 'à frente' : 'atrás'}.</b>}
       </p>
-      <div className="h-56">
+      <div className="h-56" role="img"
+        aria-label={`Páginas acumuladas: você ${c.voce} em ${fmtMes(c.mes)} contra ${c.fantasma} do fantasma em ${fmtMes(c.mesFantasma)}, até o dia ${c.dias.filter((d) => d.voce != null).length}`}>
         <ResponsiveContainer>
           <LineChart data={c.dias}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -338,8 +344,15 @@ export default function ConquistasPage() {
           </span>
         )}
       </div>
-      {q.isLoading && <p>Carregando…</p>}
-      {q.isError && <p className="text-red-600">Erro ao carregar as conquistas.</p>}
+      {q.isLoading && <p role="status">Carregando…</p>}
+      {q.isError && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 text-red-600">
+          Erro ao carregar as conquistas.
+          <button onClick={() => q.refetch()} className="rounded border border-stone-300 px-3 py-1 text-sm text-stone-700 hover:bg-stone-100 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800">
+            Tentar de novo
+          </button>
+        </div>
+      )}
       {j && (
         <>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

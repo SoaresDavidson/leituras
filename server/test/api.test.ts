@@ -276,6 +276,9 @@ describe('habito api', () => {
 });
 
 describe('jogo api', () => {
+  // each test already gets a fresh in-memory db; the reset keeps the swap tests independent if that changes
+  beforeEach(() => { db.prepare("DELETE FROM setting WHERE key LIKE 'jogo.%'").run(); });
+
   it('requires a session for jogo routes', async () => {
     await request(app).get('/api/jogo').expect(401);
     await request(app).post('/api/jogo/carta/trocar').expect(401);

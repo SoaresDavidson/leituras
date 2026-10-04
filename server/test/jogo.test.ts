@@ -300,3 +300,77 @@ describe('medalhas e recordes', () => {
     expect(jogo().proximaConquista).not.toBeNull();
   });
 });
+
+describe('review fixes', () => {
+  it('keeps the book mission when any candidate is read today', () => {
+    const base = () => seed([mkBook('X', 100), mkBook('Y', 100)], [...read('X', 100, '2026-10-02', 1, 10), ...read('Y', 100, '2026-10-02', 1, 10)]);
+    base();
+    const pick = jogo().missoes[1].md5;
+    for (const md5 of ['X', 'Y']) {
+      db = openDb(':memory:');
+      base();
+      seed([], readAt('2026-10-03T13:00:00Z', md5, 100, 11, 13));
+      expect(jogo().missoes[1].md5).toBe(pick);
+    }
+  });
+
+  it('ignores a manual status or an archive made today when choosing the mission', () => {
+    seed([mkBook('X', 100)], read('X', 100, '2026-10-02', 1, 10));
+    const before = jogo().missoes[1];
+    expect(before).toMatchObject({ id: 'livro-paginas', md5: 'X' });
+    db.prepare("UPDATE book SET status_manual = 'pausado' WHERE md5 = 'X'").run();
+    expect(jogo().missoes[1]).toMatchObject({ id: 'livro-paginas', md5: 'X' });
+    db.prepare("UPDATE book SET status_manual = NULL, arquivado_em = '2026-10-03' WHERE md5 = 'X'").run();
+    expect(jogo().missoes[1]).toMatchObject({ id: 'livro-paginas', md5: 'X' });
+  });
+
+  it('falls back to the default goals when a stored goal is all 0', () => {
+    for (const key of ['habito.meta_dia_minutos', 'habito.meta_dia_paginas', 'habito.meta_mes_minutos', 'habito.meta_mes_paginas']) setSetting(key, '0');
+    expect(jogo().missoes[0]).toMatchObject({ alvo: 20, unidade: 'min', feito: false });
+    expect(byId(desafiosMes(contexto(db, TZ, NOW)), 'meta-mes')).toMatchObject({ alvo: 600, feito: false });
+    expect(byId(desafiosSemana(contexto(db, TZ, NOW)), 'dias-meta')).toMatchObject({ atual: 0, feito: false });
+  });
+
+  it('never draws a card that cannot be done with the books there are', () => {
+    for (let i = 0; i < 30; i++) {
+      const now = NOW + i * DAY_MS;
+      expect(['resgate', 'dois-livros']).not.toContain(jogo(now).carta.id);
+      trocarCarta(db, TZ, now);
+      expect(['resgate', 'dois-livros']).not.toContain(jogo(now).carta.id);
+    }
+  });
+
+  it('carries the last ghost day into longer months, leap years included', () => {
+    seed([mkBook('A', 1000)], [
+      ...read('A', 1000, '2026-02-28', 1, 8),
+      ...read('A', 1000, '2027-02-28', 9, 12),
+      ...read('A', 1000, '2028-02-29', 13, 15),
+    ]);
+    const marco = jogo(Date.parse('2026-03-31T15:00:00Z')).fantasma[0];
+    expect(marco).toMatchObject({ mesFantasma: '2026-02', voce: 0, fantasma: 8 });
+    expect(marco.dias).toHaveLength(31);
+    expect(marco.dias[30]).toEqual({ dia: 31, voce: 0, fantasma: 8 });
+
+    const [jan, ano] = jogo(Date.parse('2028-02-29T15:00:00Z')).fantasma;
+    expect(jan.dias).toHaveLength(29);
+    expect(ano).toMatchObject({ mesFantasma: '2027-02', voce: 3, fantasma: 4 });
+    expect(ano.dias[28]).toEqual({ dia: 29, voce: 3, fantasma: 4 });
+  });
+
+  it('closes the lightning challenge exactly at the deadline hour', () => {
+    const { prazoHora, alvo } = jogo().relampago;
+    const localHour = (h: number, min = 0) => Date.parse('2026-10-03T03:00:00Z') + (h * 60 + min) * 60_000; // 00:00 local + h
+    expect(jogo(localHour(prazoHora - 1, 59)).relampago.estado).toBe('ativo');
+    expect(jogo(localHour(prazoHora)).relampago.estado).toBe('perdido');
+
+    // reading that starts at the deadline hour does not count
+    seed([mkBook('A', 1000)], readAt(new Date(localHour(prazoHora)).toISOString(), 'A', 1000, 1, alvo));
+    expect(jogo(localHour(prazoHora, 40)).relampago).toMatchObject({ atual: 0, estado: 'perdido' });
+  });
+
+  it('dates a streak medal across a one-day rest', () => {
+    const days = ['01', '02', '03', '05', '06', '07', '08'].map((d) => `2026-09-${d}`);
+    seed([mkBook('A', 1000)], days.flatMap((d, i) => read('A', 1000, d, 1 + i * 5, 5 + i * 5)));
+    expect(byId(jogo().medalhas, 'sequencia-7')).toMatchObject({ atual: 7, feito: true, desbloqueadaEm: '2026-09-08' });
+  });
+});

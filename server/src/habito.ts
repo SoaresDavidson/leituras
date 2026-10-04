@@ -21,6 +21,23 @@ const SETTING_KEYS = {
 } as const;
 
 type Dia = { minutos: number; paginas: number };
+export type PageStatRow = { book_md5: string; page: number; start_time: number; duration: number };
+
+// Minutes (sum of durations, rounded) and distinct book pages per local day
+export function dailyTotals(rows: PageStatRow[], timeZone: string): { diaDe: (day: string) => Dia; days: string[] } {
+  const seconds = new Map<string, number>();
+  const pages = new Map<string, Set<string>>();
+  for (const row of rows) {
+    const day = dayKey(row.start_time, timeZone);
+    seconds.set(day, (seconds.get(day) ?? 0) + row.duration);
+    if (!pages.has(day)) pages.set(day, new Set());
+    pages.get(day)!.add(`${row.book_md5}:${row.page}`);
+  }
+  return {
+    diaDe: (day) => ({ minutos: Math.round((seconds.get(day) ?? 0) / 60), paginas: pages.get(day)?.size ?? 0 }),
+    days: [...seconds.keys()],
+  };
+}
 
 export function computeStreaks(days: Iterable<string>, today: string): { atual: Sequencia | null; recorde: Sequencia | null; historico: Sequencia[] } {
   const sorted = [...new Set(days)].filter((d) => d <= today).sort();
@@ -96,24 +113,17 @@ export function getHabito(db: Db, timeZone: string, now = Date.now()): Habito {
   const today = dayKey(now / 1000, timeZone);
   const { metas, gatilho } = readHabitoSettings(db);
 
-  const seconds = new Map<string, number>();
-  const pages = new Map<string, Set<string>>();
   const porHora = Array<number>(24).fill(0);
   const patternStart = addDays(today, -(PATTERN_DAYS - 1));
-  const rows = db.prepare('SELECT book_md5, page, start_time, duration FROM page_stat').all() as
-    { book_md5: string; page: number; start_time: number; duration: number }[];
+  const rows = db.prepare('SELECT book_md5, page, start_time, duration FROM page_stat').all() as PageStatRow[];
   for (const row of rows) {
     const day = dayKey(row.start_time, timeZone);
-    seconds.set(day, (seconds.get(day) ?? 0) + row.duration);
-    if (!pages.has(day)) pages.set(day, new Set());
-    pages.get(day)!.add(`${row.book_md5}:${row.page}`);
     if (day >= patternStart && day <= today) porHora[hourOf(row.start_time, timeZone)] += row.duration / 60;
   }
 
-  const diaDe = (day: string): Dia => ({ minutos: Math.round((seconds.get(day) ?? 0) / 60), paginas: pages.get(day)?.size ?? 0 });
+  const { diaDe, days: allDays } = dailyTotals(rows, timeZone);
   const leu = (d: Dia) => d.minutos > 0 || d.paginas > 0;
 
-  const allDays = [...seconds.keys()];
   const niveis = NIVEIS.map(({ nivel, cumpre }) => {
     const { atual, recorde, historico } = computeStreaks(allDays.filter((d) => cumpre(diaDe(d), metas.dia)), today);
     return { nivel, atual, recorde, historico: historico.slice(0, HISTORY_LIMIT) };
