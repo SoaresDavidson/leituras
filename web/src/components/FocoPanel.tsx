@@ -91,18 +91,19 @@ export default function FocoPanel({ foco }: { foco: Foco }) {
     <>
       <div className="grid-3">
         <Card>
-          <div className="stat-label">Abertos</div>
           <div className={`stat-value ${excedeu ? 'text-warn' : ''}`}>{foco.abertos.length}/{foco.limite}</div>
+          <div className="stat-label">Abertos</div>
           {excedeu && <div className="text-sm text-warn">Termine um antes de começar outro</div>}
         </Card>
         <Stat label="Taxa de conclusão" value={foco.taxaConclusao.percentual == null ? '—' : `${foco.taxaConclusao.percentual}%`} />
         <Stat label="No cemitério" value={foco.cemiterio.length} />
       </div>
 
-      <Card title="Abertos">
-        <button onClick={() => setAjustando(!ajustando)} className="link mb-2">
+      <Card title="Abertos" actions={
+        <button onClick={() => setAjustando(!ajustando)} aria-expanded={ajustando} className="btn">
           {ajustando ? 'fechar ajustes' : 'ajustar'}
         </button>
+      }>
         {ajustando && <Ajustes foco={foco} onDone={() => setAjustando(false)} />}
         {foco.abertos.length === 0
           ? <p className="muted">Nenhum livro aberto.</p>
