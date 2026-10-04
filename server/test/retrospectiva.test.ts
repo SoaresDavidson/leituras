@@ -156,3 +156,48 @@ describe('getRetrospectiva', () => {
     expect(byMonth['2026-01']).toBeNull();
   });
 });
+
+describe('calendar edges', () => {
+  const at = (day: string) => Date.parse(`${day}T15:00:00Z`);
+
+  it('handles year boundaries and leap years in period ranges', () => {
+    expect(periodRange('mes', 1, '2026-01-15')).toEqual({ inicio: '2025-12-01', fim: '2025-12-31' });
+    expect(periodRange('mes', 0, '2028-02-10')).toEqual({ inicio: '2028-02-01', fim: '2028-02-29' });
+    expect(periodRange('semana', 0, '2027-01-01')).toEqual({ inicio: '2026-12-28', fim: '2027-01-03' });
+    expect(periodRange('semana', 0, '2026-12-31')).toEqual({ inicio: '2026-12-28', fim: '2027-01-03' });
+  });
+
+  it('computes the goal on the last and first day of the year', () => {
+    importPluginData(db, [mkBook('A', 300)], read('A', 300, '2026-03-01', 1, 100));
+    expect(getRetrospectiva(db, TZ, at('2026-12-31')).meta).toMatchObject({
+      diasRestantes: 1, restantes: 5900, paginasPorDia: 5900, esperadoHoje: 6000, diferenca: -5900,
+    });
+    expect(getRetrospectiva(db, TZ, at('2027-01-01')).meta).toMatchObject({
+      ano: 2027, lidas: 0, diasRestantes: 365, paginasPorDia: 17, esperadoHoje: 16, diferenca: -16,
+    });
+  });
+
+  it('uses 366 days in a leap year', () => {
+    updateRetroSettings(db, { metaAnoPaginas: 3660 });
+    expect(getRetrospectiva(db, TZ, at('2028-01-10')).meta).toMatchObject({ diasRestantes: 357, esperadoHoje: 100 });
+  });
+
+  it('compares with an empty previous period', () => {
+    importPluginData(db, [mkBook('A', 100)], read('A', 100, '2026-09-29', 1, 10));
+    expect(periodo('semana').anterior).toEqual({
+      inicio: '2026-09-21', fim: '2026-09-27', minutos: 0, paginas: 0, diasLidos: 0, livrosTocados: 0, livrosTerminados: 0,
+    });
+  });
+
+  it('skips stats whose book no longer exists', () => {
+    importPluginData(db, [mkBook('A', 100)], read('A', 100, '2026-09-29', 1, 10));
+    db.pragma('foreign_keys = OFF');
+    db.prepare("INSERT INTO page_stat (book_md5, device_id, page, start_time, duration, total_pages) VALUES ('GONE', 'k', 1, ?, 3600, 10)")
+      .run(Date.parse('2026-09-30T15:00:00Z') / 1000);
+    const p = periodo('semana');
+    expect(p.totais).toMatchObject({ minutos: 10, livrosTocados: 1 });
+    expect(p.livros.map((l) => l.book.md5)).toEqual(['A']);
+    expect(p.maiorSessao?.book.md5).toBe('A');
+    expect(retro().investimento.total.minutos).toBe(10);
+  });
+});

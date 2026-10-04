@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { MetaAno, RetroTipo, Retrospectiva } from '@leituras/shared';
 import { getRetroPeriodo, getRetrospectiva, patchRetrospectiva } from '../api';
@@ -14,6 +14,16 @@ const muted = 'text-sm text-stone-500 dark:text-stone-400';
 const num = (n: number) => n.toLocaleString('pt-BR');
 const dayMonth = (d: string) => fmtDate(d).slice(0, 5);
 const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]}/${m.slice(2, 4)}`;
+// Mirrors MAX_OFFSET in server/src/retrospectiva.ts
+const RETRO_MAX_OFFSET = 520;
+const META_MIN = 100;
+const META_MAX = 100_000;
+
+function rangeLabel(inicio: string, fim: string) {
+  const ano = String(new Date().getFullYear());
+  const fmt = inicio.startsWith(ano) && fim.startsWith(ano) ? dayMonth : fmtDate;
+  return `${fmt(inicio)} a ${fmt(fim)}`;
+}
 
 function Delta({ atual, anterior }: { atual: number; anterior: number }) {
   if (anterior === 0) return <span className={muted}>{atual > 0 ? 'nada no anterior' : 'igual ao anterior'}</span>;
@@ -38,10 +48,13 @@ function Periodo() {
   const q = useQuery({
     queryKey: ['retrospectiva', 'periodo', tipo, offset],
     queryFn: () => getRetroPeriodo(tipo, offset),
-    placeholderData: keepPreviousData,
+    // Keep the old period on screen only while navigating within the same tipo
+    placeholderData: (prev) => (prev?.tipo === tipo ? prev : undefined),
   });
   const p = q.data;
   const nome = tipo === 'semana' ? 'semana' : 'mês';
+  const anteriorLabel = tipo === 'semana' ? 'Semana anterior' : 'Mês anterior';
+  const proximoLabel = tipo === 'semana' ? 'Próxima semana' : 'Próximo mês';
   const escolher = (t: RetroTipo) => { setTipo(t); setOffset(0); };
   const tab = (t: RetroTipo) => `rounded px-3 py-1 text-sm ${tipo === t ? 'bg-emerald-600 font-medium text-white' : 'hover:bg-stone-100 dark:hover:bg-stone-800'}`;
 
@@ -53,12 +66,13 @@ function Periodo() {
           <button className={tab('mes')} aria-pressed={tipo === 'mes'} onClick={() => escolher('mes')}>Mês</button>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <button aria-label={`${nome} anterior`} className={btn} onClick={() => setOffset(offset + 1)}>←</button>
-          <span className="min-w-28 text-center text-sm">{p ? `${dayMonth(p.inicio)} a ${dayMonth(p.fim)}` : '…'}</span>
-          <button aria-label={`Próxima ${nome}`} className={btn} disabled={offset === 0} onClick={() => setOffset(offset - 1)}>→</button>
+          <button aria-label={anteriorLabel} className={btn} disabled={offset >= RETRO_MAX_OFFSET} onClick={() => setOffset(offset + 1)}>←</button>
+          <span className="min-w-28 text-center text-sm">{p ? rangeLabel(p.inicio, p.fim) : '…'}</span>
+          <button aria-label={proximoLabel} className={btn} disabled={offset === 0} onClick={() => setOffset(offset - 1)}>→</button>
         </div>
       </div>
       {q.isError && <p className="text-red-600">Erro ao carregar a retrospectiva.</p>}
+      {q.isPending && <p>Carregando…</p>}
       {p && (
         <div className={`space-y-4 ${q.isPlaceholderData ? 'opacity-60' : ''}`}>
           {offset === 0 && <p className={muted}>{tipo === 'semana' ? 'Semana' : 'Mês'} em andamento; a comparação é com o {nome} anterior inteiro.</p>}
@@ -132,21 +146,29 @@ function Investimento({ investimento }: { investimento: Retrospectiva['investime
 }
 
 function AjustarMeta({ meta, onDone }: { meta: MetaAno; onDone: () => void }) {
-  const [valor, setValor] = useState(meta.metaPaginas);
+  const [valor, setValor] = useState(String(meta.metaPaginas));
+  const [invalido, setInvalido] = useState(false);
   const qc = useQueryClient();
   const save = useMutation({
     mutationFn: patchRetrospectiva,
     onSuccess: (novo) => { qc.setQueryData(['retrospectiva'], novo); onDone(); },
   });
-  const submit = (e: FormEvent) => { e.preventDefault(); save.mutate({ metaAnoPaginas: valor }); };
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const n = Number(valor.trim());
+    if (!/^\d+$/.test(valor.trim()) || n < META_MIN || n > META_MAX) { setInvalido(true); return; }
+    save.mutate({ metaAnoPaginas: n });
+  };
+  const change = (v: string) => { setValor(v); setInvalido(false); save.reset(); };
+  const erro = invalido ? 'Use um número inteiro entre 100 e 100.000.' : save.isError ? (save.error as Error).message : null;
   return (
     <form onSubmit={submit} className="mb-3 flex flex-wrap items-end gap-3 text-sm">
       <label className="block">Meta de páginas em {meta.ano}
-        <input type="number" min={100} max={100000} step={100} value={valor} onChange={(e) => setValor(Number(e.target.value))}
+        <input type="number" inputMode="numeric" min={META_MIN} max={META_MAX} step={100} value={valor} onChange={(e) => change(e.target.value)}
           className="block w-28 rounded border border-stone-300 bg-transparent px-2 py-1 dark:border-stone-700 dark:bg-stone-900" />
       </label>
       <button disabled={save.isPending} className="rounded bg-emerald-600 px-3 py-1 font-medium text-white disabled:opacity-50">Salvar</button>
-      {save.isError && <span className="text-red-600">Use um número inteiro entre 100 e 100.000.</span>}
+      {erro && <span role="alert" className="text-red-600">{erro}</span>}
     </form>
   );
 }
@@ -156,7 +178,7 @@ function Meta({ meta }: { meta: MetaAno }) {
   const adiantado = meta.diferenca >= 0;
   return (
     <Card title={`Meta de ${meta.ano}`}>
-      <button onClick={() => setAjustando(!ajustando)} className="mb-2 text-sm text-stone-500 hover:underline">
+      <button onClick={() => setAjustando(!ajustando)} aria-expanded={ajustando} className="mb-2 text-sm text-stone-500 hover:underline">
         {ajustando ? 'fechar ajustes' : 'ajustar'}
       </button>
       {ajustando && <AjustarMeta meta={meta} onDone={() => setAjustando(false)} />}
@@ -181,12 +203,16 @@ function Meta({ meta }: { meta: MetaAno }) {
 
 function Ritmo({ r }: { r: Retrospectiva }) {
   const data = r.velocidadeMensal.map((m) => ({ label: monthLabel(m.month), paginasPorHora: m.paginasPorHora }));
-  const temDados = data.some((d) => d.paginasPorHora != null);
+  const valores = data.flatMap((d) => (d.paginasPorHora == null ? [] : [d.paginasPorHora]));
+  const temDados = valores.length > 0;
+  const resumo = temDados
+    ? `Páginas por hora por mês, de ${data[0].label} a ${data.at(-1)!.label}: média ${Math.round(valores.reduce((a, b) => a + b, 0) / valores.length)}, mínimo ${Math.min(...valores)}, máximo ${Math.max(...valores)}; último mês com dados: ${valores.at(-1)} págs/h.`
+    : '';
   return (
     <Card title="Ritmo pessoal">
       <h3 className="mb-2 text-sm font-medium">Velocidade de leitura (páginas por hora, por mês)</h3>
       {temDados ? (
-        <div className="h-56">
+        <div className="h-56" role="img" aria-label={resumo}>
           <ResponsiveContainer>
             <LineChart data={data} margin={{ left: -20, right: 8 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />

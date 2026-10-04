@@ -24,11 +24,11 @@ export const EQUIVALENCIAS = [
   { id: 'livros', rotulo: 'livros de 300 páginas', base: 'paginas', valor: 300 },
 ] as const;
 
-// One page_stat row = one page read, like the dashboard totals
+// One page_stat row = one page read, like the dashboard totals; rows of missing books are skipped
 type Row = { md5: string; start: number; seconds: number; day: string };
 
 function loadRows(db: Db, timeZone: string): Row[] {
-  const rows = db.prepare('SELECT book_md5, start_time, duration FROM page_stat ORDER BY start_time').all() as
+  const rows = db.prepare('SELECT book_md5, start_time, duration FROM page_stat JOIN book ON book.md5 = page_stat.book_md5 ORDER BY start_time').all() as
     { book_md5: string; start_time: number; duration: number }[];
   return rows.map((r) => ({ md5: r.book_md5, start: r.start_time, seconds: r.duration, day: dayKey(r.start_time, timeZone) }));
 }
@@ -88,8 +88,8 @@ function sessions(rows: Row[]): { md5: string; day: string; seconds: number }[] 
 
 export function getRetroPeriodo(db: Db, tipo: RetroTipo, offset: number, timeZone: string, now = Date.now()): RetroPeriodo {
   const today = dayKey(now / 1000, timeZone);
-  const rows = loadRows(db, timeZone);
   const books = new Map(listBooks(db, timeZone, now).map((b) => [b.md5, b]));
+  const rows = loadRows(db, timeZone).filter((r) => books.has(r.md5));
   const within = (day: string | null, r: { inicio: string; fim: string }) => day != null && day >= r.inicio && day <= r.fim;
   const finishedIn = (r: { inicio: string; fim: string }) => [...books.values()].filter((b) => b.status === 'lido' && within(b.finishedAt, r));
 
@@ -113,12 +113,11 @@ export function getRetroPeriodo(db: Db, tipo: RetroTipo, offset: number, timeZon
   }
   const livros = [...byBook]
     .sort((a, b) => b[1].seconds - a[1].seconds)
-    .map(([md5, acc]) => ({
-      book: books.get(md5)!,
-      minutos: minutes(acc.seconds),
-      paginas: acc.pages,
-      terminou: finished.some((b) => b.md5 === md5),
-    }));
+    .flatMap(([md5, acc]) => {
+      const book = books.get(md5);
+      return book ? [{ book, minutos: minutes(acc.seconds), paginas: acc.pages, terminou: finished.some((b) => b.md5 === md5) }] : [];
+    });
+  const longestBook = longest && books.get(longest.md5);
 
   return {
     tipo,
@@ -127,7 +126,7 @@ export function getRetroPeriodo(db: Db, tipo: RetroTipo, offset: number, timeZon
     totais: totals(inRange, finished),
     anterior: { ...prev, ...totals(rows.filter((r) => within(r.day, prev)), finishedIn(prev)) },
     melhorDia: bestDay ? { date: bestDay[0], minutos: minutes(bestDay[1]) } : null,
-    maiorSessao: longest ? { date: longest.day, minutos: minutes(longest.seconds), book: books.get(longest.md5)! } : null,
+    maiorSessao: longest && longestBook ? { date: longest.day, minutos: minutes(longest.seconds), book: longestBook } : null,
     livros,
   };
 }
