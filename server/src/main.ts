@@ -5,10 +5,6 @@ import { loadConfig } from './config';
 import { openDb } from './db';
 
 const config = loadConfig();
-if (!config.pluginToken) {
-  console.error('PLUGIN_TOKEN is not set. Generate one with: openssl rand -hex 32');
-  process.exit(1);
-}
 
 mkdirSync(config.dataPath, { recursive: true });
 const db = openDb(path.join(config.dataPath, 'leituras.sqlite3'));

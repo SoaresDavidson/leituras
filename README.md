@@ -7,16 +7,17 @@ KOReader + `plugin/leituras.koplugin` (fork of the KoInsight plugin) -> `POST /a
 ## Setup
 
 ```bash
-cp .env.example .env          # fill PLUGIN_TOKEN (openssl rand -hex 32), LAN_IP
+cp .env.example .env          # fill LAN_IP
 docker compose up -d --build
 docker compose exec leituras node dist/cli.js set-password
 ```
 
 Copy `plugin/leituras.koplugin` to `koreader/plugins/` on the Kindle over USB, then in KOReader open
-Tools > Leituras > Set server URL and token, and enter `http://<LAN_IP>:3333` and the `PLUGIN_TOKEN` from `.env`.
+Tools > Leituras > Set server URL, and enter `http://<LAN_IP>:3333`. The plugin endpoints have no auth:
+the port is published on the LAN IP only, so anyone on that network can send data.
 It syncs on suspend/power off (when Wi-Fi is on), or via Tools > Leituras > Synchronize data.
 
-To skip typing the token on the Kindle keyboard, create `koreader/settings/leituras.lua` over USB
+To skip typing the URL on the Kindle keyboard, create `koreader/settings/leituras.lua` over USB
 instead, with KOReader closed (it may overwrite the file on exit):
 
 ```lua
@@ -24,7 +25,6 @@ instead, with KOReader closed (it may overwrite the file on exit):
 return {
     ["leituras"] = {
         ["server_url"] = "http://<LAN_IP>:3333",
-        ["token"] = "<PLUGIN_TOKEN from .env>",
     },
 }
 ```

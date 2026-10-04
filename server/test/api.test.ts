@@ -9,14 +9,12 @@ import { setPassword } from '../src/auth';
 import type { Config } from '../src/config';
 import { openDb, type Db } from '../src/db';
 
-const TOKEN = 'plugin-secret';
 const PASSWORD = 'senha-forte-123';
 
 const config: Config = {
   port: 0,
   host: '127.0.0.1',
   dataPath: mkdtempSync(path.join(tmpdir(), 'leituras-')),
-  pluginToken: TOKEN,
   timeZone: 'America/Fortaleza',
   webDistPath: '/nonexistent',
 };
@@ -35,8 +33,8 @@ function pageStats(n: number, start = 1_759_000_000): PluginPageStat[] {
 let db: Db;
 let app: ReturnType<typeof createApp>;
 
-const sendImport = (body: object, token = TOKEN) =>
-  request(app).post('/api/plugin/import').set('Authorization', `Bearer ${token}`).send({ version: '0.3.0', ...body });
+const sendImport = (body: object) =>
+  request(app).post('/api/plugin/import').send({ version: '0.3.0', ...body });
 
 async function login() {
   const agent = request.agent(app);
@@ -51,11 +49,6 @@ beforeEach(async () => {
 });
 
 describe('plugin import', () => {
-  it('rejects requests without the plugin token', async () => {
-    await request(app).post('/api/plugin/import').send({ books: [book], stats: [] }).expect(401);
-    await sendImport({ books: [book], stats: [] }, 'wrong').expect(401);
-  });
-
   it('ignores duplicated stats when the plugin resends its full history', async () => {
     await sendImport({ books: [book], stats: pageStats(5) }).expect(200);
     await sendImport({ books: [book], stats: pageStats(5) }).expect(200);

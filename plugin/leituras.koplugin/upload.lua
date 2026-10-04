@@ -8,7 +8,6 @@ local logger = require("logger")
 local UIManager = require("ui/uimanager")
 local const = require("./const")
 local Device = require("device")
-local KoInsightSettings = require("settings")
 
 local API_UPLOAD_LOCATION = "/api/plugin/import"
 local API_DEVICE_LOCATION = "/api/plugin/device"
@@ -19,7 +18,6 @@ local function get_headers(body)
   local headers = {
     ["Content-Type"] = "application/json",
     ["Content-Length"] = tostring(#body),
-    ["Authorization"] = "Bearer " .. KoInsightSettings:new():getToken(),
   }
   return headers
 end

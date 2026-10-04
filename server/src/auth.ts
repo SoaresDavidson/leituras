@@ -1,6 +1,6 @@
 import { hash, verify } from '@node-rs/argon2';
 import type { NextFunction, Request, Response } from 'express';
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import type { Db } from './db';
 
 const SESSION_COOKIE = 'sid';
@@ -53,17 +53,6 @@ export function requireSession(db: Db) {
     const token = readSessionToken(req);
     if (token && find.get(sha256(token).toString('hex'), Date.now())) return next();
     res.status(401).json({ error: 'Não autenticado' });
-  };
-}
-
-export function requirePluginToken(expected: string) {
-  const expectedHash = sha256(expected);
-  return (req: Request, res: Response, next: NextFunction) => {
-    const header = req.headers.authorization ?? '';
-    const provided = header.startsWith('Bearer ') ? header.slice(7) : '';
-    // Hashing both sides gives equal-length buffers for timingSafeEqual
-    if (expected && provided && timingSafeEqual(sha256(provided), expectedHash)) return next();
-    res.status(401).json({ error: 'Invalid token' });
   };
 }
 

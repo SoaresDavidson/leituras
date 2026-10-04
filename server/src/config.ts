@@ -4,7 +4,6 @@ export type Config = {
   port: number;
   host: string;
   dataPath: string;
-  pluginToken: string;
   timeZone: string;
   webDistPath: string;
 };
@@ -15,7 +14,6 @@ export function loadConfig(env = process.env): Config {
     port: Number(env.PORT ?? 3333),
     host: env.HOST ?? '0.0.0.0',
     dataPath,
-    pluginToken: env.PLUGIN_TOKEN ?? '',
     timeZone: env.TZ_NAME ?? 'America/Fortaleza',
     webDistPath: path.resolve(env.WEB_DIST ?? path.join(import.meta.dirname, '../../web/dist')),
   };

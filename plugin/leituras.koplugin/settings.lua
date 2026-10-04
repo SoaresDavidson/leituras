@@ -17,7 +17,6 @@ KoInsightSettings.__index = KoInsightSettings
 local SETTING_KEY = "leituras"
 local DEFAULTS = {
   server_url = "",
-  token = "",
   sync_on_suspend = true,
   aggressive_suspend_sync = false,
   suspend_connect_timeout_s = 10, -- clamped to [3, 60]
@@ -99,12 +98,9 @@ end
 function KoInsightSettings:getServerURL()
   return self.data.server_url or DEFAULTS.server_url
 end
-function KoInsightSettings:getToken()
-  return self.data.token or DEFAULTS.token
-end
-function KoInsightSettings:setServerSettings(url, token)
+function KoInsightSettings:setServerURL(url)
   url = tostring(url or ""):gsub("/*$", "")
-  self:update({ server_url = url, token = token })
+  self:update({ server_url = url })
 end
 
 function KoInsightSettings:getSyncOnSuspendEnabled()
@@ -201,12 +197,6 @@ function KoInsightSettings:editServerSettings()
         description = _("Server URL:"),
         hint = _("http://example.com:port"),
       },
-      {
-        text = self.data.token,
-        description = _("Token (PLUGIN_TOKEN):"),
-        hint = _("token"),
-        text_type = "password",
-      },
     },
     buttons = {
       {
@@ -221,7 +211,7 @@ function KoInsightSettings:editServerSettings()
           text = _("Info"),
           callback = function()
             UIManager:show(InfoMessage:new({
-              text = _("Enter the URL of your Leituras server and the PLUGIN_TOKEN from its .env"),
+              text = _("Enter the URL of your Leituras server"),
             }))
           end,
         },
@@ -230,7 +220,6 @@ function KoInsightSettings:editServerSettings()
           callback = function()
             local myfields = self.settings_dialog:getFields()
             local server_url = myfields[1]
-            local token = myfields[2]
 
             if server_url == "" then
                 UIManager:show(InfoMessage:new({
@@ -246,14 +235,7 @@ function KoInsightSettings:editServerSettings()
                 return
             end
 
-            if token == "" then
-                UIManager:show(InfoMessage:new({
-                    text = _("Please enter the token."),
-                }))
-                return
-            end
-
-            self:setServerSettings(server_url, token)
+            self:setServerURL(server_url)
             UIManager:close(self.settings_dialog)
             UIManager:show(InfoMessage:new({
                 text = _("Leituras settings saved."),

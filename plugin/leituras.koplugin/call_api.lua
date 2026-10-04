@@ -62,7 +62,7 @@ return function(method, url, headers, body, filepath, quiet)
       return false, "invalid_response"
     end
   else
-    -- The server answers errors as JSON { error = "..." }; show it so e.g. a wrong token is visible
+    -- The server answers errors as JSON { error = "..." }; show it so the cause is visible
     local decoded_ok, error_body = pcall(JSON.decode, table.concat(sink))
     local server_error = decoded_ok and type(error_body) == "table" and error_body.error or nil
     logger.err("[Leituras] callApi: HTTP error", status or code, resp_headers, server_error)

@@ -72,9 +72,9 @@ function koinsight:addToMainMenu(menu_items)
         end,
       },
 
-      -- 5) Server URL and token
+      -- 5) Server URL
       {
-        text = _("Set server URL and token"),
+        text = _("Set server URL"),
         keep_menu_open = true,
         separator = true, -- separator line *after* this item (before "About")
         callback = function()

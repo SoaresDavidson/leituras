@@ -2,7 +2,7 @@ import type { BookPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus
 import express, { type Request, type Response } from 'express';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { checkPassword, createSession, destroySession, loginRateLimit, requirePluginToken, requireSession } from './auth';
+import { checkPassword, createSession, destroySession, loginRateLimit, requireSession } from './auth';
 import { getBook, getDashboard, importPluginData, listBooks, updateBook } from './books';
 import type { Config } from './config';
 import { coverPath, fetchMissingCovers } from './covers';
@@ -28,9 +28,8 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
   app.set('trust proxy', 'loopback');
   app.use(express.json({ limit: '50mb' }));
 
-  // ---- KOReader plugin (bearer token) ----
+  // ---- KOReader plugin (no auth: the port is published on the LAN IP only, see compose.yaml) ----
   const plugin = express.Router();
-  plugin.use(requirePluginToken(config.pluginToken));
 
   plugin.post('/device', (req: Request, res: Response) => {
     const { id, model } = req.body as Partial<PluginDevicePayload>;
