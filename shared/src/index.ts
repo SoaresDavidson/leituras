@@ -95,3 +95,51 @@ export type BookPatch = Partial<{
   topicos: string;
   arquivado: boolean;
 }>;
+
+// ---- habito ----
+
+export type HabitoMeta = { minutos: number; paginas: number }; // 0 = part turned off
+
+export type HabitoDia = DailyMinutes & { pages: number; metaBatida: boolean };
+
+export type NivelSequencia = 'bronze' | 'prata' | 'ouro';
+
+export type Sequencia = { inicio: string; fim: string; dias: number }; // dias = days that met the level
+
+export type HabitoNivel = {
+  nivel: NivelSequencia;
+  atual: Sequencia | null; // alive while its last day is today, yesterday or the day before
+  recorde: Sequencia | null;
+  historico: Sequencia[]; // closed streaks, most recent first, at most 10
+};
+
+export type HabitoJanela = {
+  inicio: string;
+  fim: string;
+  minutos: number;
+  paginas: number;
+  diasComLeitura: number;
+  diasComMeta: number;
+};
+
+export type Habito = {
+  hoje: string; // YYYY-MM-DD
+  metas: { dia: HabitoMeta; mes: HabitoMeta };
+  gatilho: string;
+  progresso: { dia: HabitoMeta; mes: HabitoMeta };
+  niveis: HabitoNivel[]; // bronze, prata, ouro
+  daily: HabitoDia[]; // last 365 days, oldest first
+  porHora: number[]; // 24 values: minutes per hour of day, last 90 days
+  porDiaSemana: number[]; // 7 values Mon..Sun: average minutes per day, last 90 days
+  semana: { atual: number[]; anterior: number[]; variacao: number | null }; // minutes Mon..Sun; variacao in %
+  vsPassado: { atual: HabitoJanela; antes: HabitoJanela }; // last 30 days vs the 30 days ending 90 days ago
+  consistencia: { pontuacao: number; diasComMeta: number; diasComLeitura: number; inicio: string; fim: string }; // 0-100
+};
+
+export type HabitoPatch = Partial<{
+  metaDiaMinutos: number;
+  metaDiaPaginas: number;
+  metaMesMinutos: number;
+  metaMesPaginas: number;
+  gatilho: string;
+}>;
