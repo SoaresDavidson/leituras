@@ -45,6 +45,7 @@ export function deleteNota(db: Db, id: number): boolean {
 export function revisarNota(db: Db, id: number, lembrei: boolean, today: string): Nota | undefined {
   const nota = getNota(db, id);
   if (!nota) return undefined;
+  if (nota.revisadoEm === today) return nota; // one review per day: a second click must not advance twice
   const etapa = lembrei ? Math.min(nota.etapa + 1, INTERVALOS.length - 1) : 0;
   db.prepare('UPDATE aprendizado SET etapa = ?, proxima_revisao = ?, revisado_em = ? WHERE id = ?')
     .run(etapa, addDays(today, INTERVALOS[etapa]), today, id);
@@ -53,13 +54,17 @@ export function revisarNota(db: Db, id: number, lembrei: boolean, today: string)
 
 // ---- book mapping ----
 
+const ARVORE_NOS: LivroAprendizado['arvore'] = ARVORE.map((n) => ({
+  id: n.id, nome: n.nome, filhos: (n.filhos ?? []).map(({ id, nome }) => ({ id, nome })),
+}));
+
 const NODE_IDS = new Set(ARVORE.flatMap((n) => [n.id, ...(n.filhos ?? []).map((f) => f.id)]));
 
 export function getLivroAprendizado(db: Db, md5: string): LivroAprendizado | undefined {
   const row = db.prepare('SELECT area FROM book WHERE md5 = ?').get(md5) as { area: string | null } | undefined;
   if (!row) return undefined;
   const notas = (db.prepare(`${NOTA_SQL} WHERE a.md5 = ? ORDER BY a.criado_em DESC, a.id DESC`).all(md5) as NotaRow[]).map(toNota);
-  return { area: row.area, notas };
+  return { area: row.area, notas, arvore: ARVORE_NOS };
 }
 
 export function setArea(db: Db, md5: string, area: string | null): 'ok' | 'not-found' | 'invalid' {
@@ -96,16 +101,21 @@ const nivel = (minutos: number, livrosLidos: number) => {
 type BookArea = BookDetail & { area: string | null };
 
 function ferrugem(books: BookArea[], notas: Nota[], today: string): Aprendizado['ferrugem'] {
-  const latest = new Map<string, string>();
-  const bump = (area: string, day: string | null) => {
+  // grouped trimmed and case-insensitively; shown with the first spelling seen
+  const latest = new Map<string, { area: string; day: string }>();
+  const bump = (categoria: string, day: string | null) => {
+    const area = categoria.trim();
     if (!area || !day) return;
-    if (day > (latest.get(area) ?? '')) latest.set(area, day);
+    const key = area.toLocaleLowerCase('pt-BR');
+    const entry = latest.get(key);
+    if (!entry) latest.set(key, { area, day });
+    else if (day > entry.day) entry.day = day;
   };
   const categoriaOf = new Map(books.map((b) => [b.md5, b.categoria]));
   for (const b of books) bump(b.categoria, b.lastReadAt);
   for (const n of notas) bump(categoriaOf.get(n.md5) ?? '', n.revisadoEm);
-  return [...latest]
-    .map(([area, ultimaAtividade]) => {
+  return [...latest.values()]
+    .map(({ area, day: ultimaAtividade }) => {
       const dias = daysBetween(ultimaAtividade, today);
       return { area, dias, ferrugem: rustPercent(dias), ultimaAtividade };
     })
@@ -148,8 +158,10 @@ function trilhas(db: Db, books: BookArea[]): TrilhaProgresso[] {
     const itens = t.itens.map((i) => {
       const livros = rows
         .filter((r) => r.trilha === t.id && r.item === i.id)
-        .map((r) => byMd5.get(r.md5)!)
-        .map(({ md5, title, status }) => ({ md5, title, status }));
+        .flatMap((r) => {
+          const b = byMd5.get(r.md5);
+          return b ? [{ md5: b.md5, title: b.title, status: b.status }] : [];
+        });
       const estado = livros.some((l) => l.status === 'lido') ? 'feito' as const : livros.length > 0 ? 'andamento' as const : 'vazio' as const;
       return { ...i, estado, livros };
     });

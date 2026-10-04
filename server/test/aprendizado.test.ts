@@ -2,7 +2,7 @@ import type { PluginBook, PluginPageStat } from '@leituras/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addNota, deleteNota, getAprendizado, getLivroAprendizado, revisarNota, setArea, setTrilhaItem } from '../src/aprendizado';
 import { importPluginData } from '../src/books';
-import { addDays } from '../src/dates';
+import { addDays, daysBetween } from '../src/dates';
 import { openDb, type Db } from '../src/db';
 
 const TZ = 'America/Fortaleza';
@@ -47,21 +47,32 @@ describe('notas e revisão espaçada', () => {
   it('advances through the intervals on lembrei and stops at the last one', () => {
     seed([mkBook('A', 10)]);
     const { id } = addNota(db, 'A', 'x', TODAY)!;
-    const gaps = Array.from({ length: 7 }, () => {
-      const n = revisarNota(db, id, true, TODAY)!;
-      expect(n.revisadoEm).toBe(TODAY);
-      return n.proximaRevisao;
+    // one review per day, on consecutive days
+    const gaps = Array.from({ length: 7 }, (_, i) => {
+      const day = addDays(TODAY, i);
+      const n = revisarNota(db, id, true, day)!;
+      expect(n.revisadoEm).toBe(day);
+      return daysBetween(day, n.proximaRevisao);
     });
-    expect(gaps).toEqual([3, 7, 14, 30, 60, 120, 120].map((d) => addDays(TODAY, d)));
+    expect(gaps).toEqual([3, 7, 14, 30, 60, 120, 120]);
   });
 
   it('resets to one day on esqueci', () => {
     seed([mkBook('A', 10)]);
     const { id } = addNota(db, 'A', 'x', TODAY)!;
-    revisarNota(db, id, true, TODAY);
-    revisarNota(db, id, true, TODAY);
+    revisarNota(db, id, true, '2026-10-01');
+    revisarNota(db, id, true, '2026-10-02');
     expect(revisarNota(db, id, false, TODAY)).toMatchObject({ etapa: 0, proximaRevisao: '2026-10-04' });
     expect(revisarNota(db, 9999, true, TODAY)).toBeUndefined();
+  });
+
+  it('counts only one review per day', () => {
+    seed([mkBook('A', 10)]);
+    const { id } = addNota(db, 'A', 'x', TODAY)!;
+    const first = revisarNota(db, id, true, TODAY)!;
+    expect(revisarNota(db, id, true, TODAY)).toEqual(first);
+    expect(revisarNota(db, id, false, TODAY)).toEqual(first);
+    expect(revisarNota(db, id, true, '2026-10-04')!.etapa).toBe(2);
   });
 
   it('lists only due notes in revisarHoje, most overdue first, and the journal newest first', () => {
@@ -117,6 +128,35 @@ describe('ferrugem por categoria', () => {
   });
 });
 
+describe('ferrugem: agrupamento', () => {
+  it('groups categorias trimmed and case-insensitively', () => {
+    seed([mkBook('A', 100), mkBook('B', 100)], [...read('A', 100, '2026-10-01', 1, 2), ...read('B', 100, '2026-05-01', 1, 2)]);
+    setCol('A', 'categoria', 'Redes');
+    setCol('B', 'categoria', ' redes ');
+    expect(aprendizado().ferrugem).toEqual([{ area: 'Redes', dias: 2, ferrugem: 0, ultimaAtividade: '2026-10-01' }]);
+  });
+});
+
+describe('exclusão de livro', () => {
+  it('cascades to notes and trail marks', () => {
+    seed([mkBook('A', 10), mkBook('B', 10)]);
+    addNota(db, 'A', 'x', TODAY);
+    setTrilhaItem(db, 'ia-do-zero', 'matematica', ['A', 'B']);
+    db.prepare("DELETE FROM book WHERE md5 = 'A'").run();
+    expect(db.prepare('SELECT COUNT(*) AS n FROM aprendizado').get()).toEqual({ n: 0 });
+    const item = aprendizado().trilhas.find((t) => t.id === 'ia-do-zero')!.itens[0];
+    expect(item.livros.map((l) => l.md5)).toEqual(['B']);
+  });
+
+  it('ignores trail rows whose book is gone', () => {
+    seed([mkBook('A', 10)]);
+    setTrilhaItem(db, 'ia-do-zero', 'matematica', ['A']);
+    db.pragma('foreign_keys = OFF');
+    db.prepare("DELETE FROM book WHERE md5 = 'A'").run();
+    expect(aprendizado().trilhas.find((t) => t.id === 'ia-do-zero')!.itens[0]).toMatchObject({ estado: 'vazio', livros: [] });
+  });
+});
+
 describe('árvore de habilidades', () => {
   it('sums minutes and finished books per node and into the root, with levels from points', () => {
     seed(
@@ -136,12 +176,14 @@ describe('árvore de habilidades', () => {
   it('sets and clears the node of a book', () => {
     seed([mkBook('A', 10)]);
     expect(setArea(db, 'A', 'compiladores')).toBe('ok');
-    expect(getLivroAprendizado(db, 'A')).toEqual({ area: 'compiladores', notas: [] });
+    expect(getLivroAprendizado(db, 'A')).toMatchObject({ area: 'compiladores', notas: [] });
     expect(setArea(db, 'A', 'nao-existe')).toBe('invalid');
     expect(setArea(db, 'X', 'compiladores')).toBe('not-found');
     expect(setArea(db, 'A', null)).toBe('ok');
     expect(getLivroAprendizado(db, 'A')?.area).toBeNull();
     expect(getLivroAprendizado(db, 'X')).toBeUndefined();
+    const arvore = getLivroAprendizado(db, 'A')!.arvore;
+    expect(arvore.find((n) => n.id === 'linguagens')!.filhos.map((f) => f.id)).toContain('compiladores');
   });
 });
 

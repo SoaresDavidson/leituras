@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { BookDetail, NoArvore } from '@leituras/shared';
-import { deleteNota, getAprendizado, getLivroAprendizado, postNota, putArea } from '../api';
+import type { BookDetail, LivroAprendizado } from '@leituras/shared';
+import { deleteNota, getLivroAprendizado, postNota, putArea } from '../api';
 import { fmtDate } from '../format';
 import { Card } from './Card';
 
 export const btn = 'rounded border border-stone-300 px-2 py-1 text-sm hover:bg-stone-100 disabled:opacity-40 dark:border-stone-700 dark:hover:bg-stone-800';
 export const input = 'w-full rounded border border-stone-300 bg-transparent px-3 py-2 dark:border-stone-700 dark:bg-stone-900';
 export const primary = 'rounded bg-emerald-600 px-4 py-2 font-medium text-white disabled:opacity-50';
+
+export const ErroInline = ({ show, children = 'Não foi possível salvar. Tente de novo.' }: { show: boolean; children?: string }) =>
+  show ? <p role="alert" className="text-sm text-red-600">{children}</p> : null;
 
 export function useAprendizadoMutation<T, R = unknown>(fn: (arg: T) => Promise<R>) {
   const qc = useQueryClient();
@@ -42,7 +45,7 @@ export function NovaNota({ md5, placeholder }: { md5: string; placeholder?: stri
 }
 
 export function AreaSelect({ arvore, value, onChange, disabled }: {
-  arvore: NoArvore[]; value: string | null; onChange: (area: string | null) => void; disabled?: boolean;
+  arvore: LivroAprendizado['arvore']; value: string | null; onChange: (area: string | null) => void; disabled?: boolean;
 }) {
   return (
     <select value={value ?? ''} disabled={disabled} onChange={(e) => onChange(e.target.value || null)} className={input}>
@@ -59,7 +62,6 @@ export function AreaSelect({ arvore, value, onChange, disabled }: {
 
 export default function AprendizadoLivro({ book }: { book: BookDetail }) {
   const livro = useQuery({ queryKey: ['aprendizado-livro', book.md5], queryFn: () => getLivroAprendizado(book.md5) });
-  const geral = useQuery({ queryKey: ['aprendizado'], queryFn: getAprendizado });
   const area = useAprendizadoMutation((a: string | null) => putArea(book.md5, a));
   const apagar = useAprendizadoMutation(deleteNota);
   const lido = book.status === 'lido';
@@ -67,12 +69,19 @@ export default function AprendizadoLivro({ book }: { book: BookDetail }) {
   return (
     <Card title="O que aprendi">
       {lido && <p className="mb-3 text-sm font-medium text-emerald-700 dark:text-emerald-400">Terminou! O que ficou deste livro?</p>}
+      {livro.isError && (
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-red-600">Erro ao carregar os aprendizados.</span>
+          <button onClick={() => livro.refetch()} className={btn}>Tentar de novo</button>
+        </div>
+      )}
+      {livro.isLoading && <p className="text-sm text-stone-500">Carregando…</p>}
+      {livro.data && (
       <div className="space-y-4">
         <label className="block text-sm">Área da árvore de habilidades
-          {geral.data && livro.data
-            ? <AreaSelect arvore={geral.data.arvore} value={livro.data.area} disabled={area.isPending} onChange={(a) => area.mutate(a)} />
-            : <div className="text-stone-500">Carregando…</div>}
+          <AreaSelect arvore={livro.data.arvore} value={livro.data.area} disabled={area.isPending} onChange={(a) => area.mutate(a)} />
         </label>
+        <ErroInline show={area.isError}>Não foi possível mudar a área.</ErroInline>
         {livro.data && livro.data.notas.length > 0 && (
           <ul className="divide-y divide-stone-200 dark:divide-stone-800">
             {livro.data.notas.map((n) => (
@@ -86,8 +95,10 @@ export default function AprendizadoLivro({ book }: { book: BookDetail }) {
             ))}
           </ul>
         )}
+        <ErroInline show={apagar.isError}>Não foi possível apagar.</ErroInline>
         <NovaNota md5={book.md5} placeholder={lido ? 'Uma ideia que você quer lembrar daqui a um ano' : 'Algo que você aprendeu até aqui'} />
       </div>
+      )}
     </Card>
   );
 }

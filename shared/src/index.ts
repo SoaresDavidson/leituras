@@ -139,4 +139,5 @@ export type Aprendizado = {
 export type LivroAprendizado = {
   area: string | null; // skill tree node id
   notas: Nota[]; // newest first
+  arvore: { id: string; nome: string; filhos: { id: string; nome: string }[] }[]; // skill tree nodes, for the picker
 };

@@ -266,6 +266,28 @@ describe('aprendizado api', () => {
     }
   });
 
+  it('accepts 2000 characters and rejects 2001', async () => {
+    await seedBook();
+    const agent = await login();
+    await agent.post('/api/aprendizado/notas').send({ md5: 'abc123', texto: 'x'.repeat(2000) }).expect(201);
+    await agent.post('/api/aprendizado/notas').send({ md5: 'abc123', texto: 'x'.repeat(2001) }).expect(400);
+  });
+
+  it('returns 404 for a non-numeric note id', async () => {
+    const agent = await login();
+    await agent.delete('/api/aprendizado/notas/abc').expect(404);
+    await agent.post('/api/aprendizado/notas/1.5/revisao').send({ lembrei: true }).expect(404);
+  });
+
+  it('distinguishes unknown trail items (404) from bad books (400)', async () => {
+    await seedBook();
+    const agent = await login();
+    await agent.put('/api/aprendizado/trilhas/nao-existe/itens/analise').send({ md5s: ['abc123'] }).expect(404);
+    await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/nao-existe').send({ md5s: ['abc123'] }).expect(404);
+    await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/analise').send({ md5s: ['nao-existe'] }).expect(400);
+    await agent.put('/api/aprendizado/trilhas/construir-linguagem/itens/analise').send({ md5s: ['abc123', 'abc123'] }).expect(400);
+  });
+
   it('keeps area, notes and trails when the plugin imports again', async () => {
     await seedBook();
     const agent = await login();

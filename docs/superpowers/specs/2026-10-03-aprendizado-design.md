@@ -64,13 +64,16 @@ CREATE TABLE trilha_livro (
 );
 ```
 
-A importação do plugin não toca em `area`, `aprendizado` nem `trilha_livro`. Nenhuma configuração nova.
+A importação do plugin não toca em `area`, `aprendizado` nem `trilha_livro`. Excluir um livro apaga, em cascata,
+as notas e as marcações de trilha dele. Nenhuma configuração nova.
 
 ### Valores calculados (nada disso é guardado)
 
 - **Revisão**: ao criar, etapa 0 e `proximaRevisao = hoje + 1`. Lembrei: `etapa = min(etapa + 1, 6)`;
   esqueci: `etapa = 0`. Em ambos `proximaRevisao = hoje + INTERVALOS[etapa]` e `revisadoEm = hoje`.
-- **Ferrugem** por categoria não vazia: `ultimaAtividade` = maior data entre `lastReadAt` dos livros da categoria
+  Só uma revisão por dia: se `revisadoEm` já é hoje, a nota volta sem mudança (clique duplo não avança duas vezes).
+- **Ferrugem** por categoria não vazia (agrupada sem espaços nas pontas e sem diferenciar maiúsculas; exibida com a
+  primeira grafia vista): `ultimaAtividade` = maior data entre `lastReadAt` dos livros da categoria
   e `revisadoEm` das notas desses livros. `dias = hoje − ultimaAtividade`.
   `ferrugem = 0` se `dias <= 7`; `100` se `dias >= 90`; senão `round((dias − 7) / 83 × 100)`.
   Categorias sem nenhuma atividade ficam de fora. Ordem: mais enferrujada primeiro.
@@ -94,7 +97,8 @@ Tipos em `shared/src/index.ts` (seção `// ---- aprendizado ----`): `Nota`, `No
 
 1. **`GET /api/aprendizado`** → `Aprendizado`: `hoje`, `notas` (diário, mais recentes primeiro), `revisarHoje`
    (mais atrasada primeiro), `ferrugem`, `arvore`, `trilhas`, `lacunas`, `topicos`.
-2. **`GET /api/aprendizado/livros/:md5`** → `LivroAprendizado` `{ area, notas }`. 404 se o livro não existe.
+2. **`GET /api/aprendizado/livros/:md5`** → `LivroAprendizado` `{ area, notas, arvore }` (`arvore` = só ids e nomes
+   dos nós, para o seletor; a página do livro não carrega o `GET /api/aprendizado` inteiro). 404 se o livro não existe.
 3. **`PUT /api/aprendizado/livros/:md5/area`** com `{ area: string | null }`. 400 se não for id de nó conhecido.
    Resposta: `LivroAprendizado`.
 4. **`POST /api/aprendizado/notas`** com `{ md5, texto }`. Texto aparado, 1 a 2000 caracteres. 201 com a `Nota`.

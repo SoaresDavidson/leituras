@@ -6,7 +6,7 @@ import { deleteNota, getAprendizado, getBooks, putTrilhaItem, revisarNota } from
 import { fmtDate, fmtHours } from '../format';
 import { Card, Stat } from '../components/Card';
 import ProgressBar from '../components/ProgressBar';
-import { NovaNota, btn, input, useAprendizadoMutation } from '../components/AprendizadoLivro';
+import { ErroInline, NovaNota, btn, input, useAprendizadoMutation } from '../components/AprendizadoLivro';
 
 const MAX_NIVEL = 5;
 const muted = 'text-sm text-stone-500 dark:text-stone-400';
@@ -16,6 +16,8 @@ function RevisarHoje({ notas }: { notas: Nota[] }) {
   const revisar = useAprendizadoMutation(({ id, lembrei }: { id: number; lembrei: boolean }) => revisarNota(id, lembrei));
   if (notas.length === 0) return <p className={muted}>Nada para revisar hoje.</p>;
   return (
+    <>
+    <ErroInline show={revisar.isError}>Não foi possível registrar a revisão.</ErroInline>
     <ul className="space-y-3">
       {notas.map((n) => (
         <li key={n.id} className="rounded border border-stone-200 p-3 dark:border-stone-800">
@@ -31,6 +33,7 @@ function RevisarHoje({ notas }: { notas: Nota[] }) {
         </li>
       ))}
     </ul>
+    </>
   );
 }
 
@@ -57,6 +60,7 @@ function Diario({ notas }: { notas: Nota[] }) {
   for (const n of notas) porDia.set(n.criadoEm, [...(porDia.get(n.criadoEm) ?? []), n]);
   return (
     <div className="space-y-4">
+      <ErroInline show={apagar.isError}>Não foi possível apagar.</ErroInline>
       {[...porDia].map(([dia, doDia]) => (
         <section key={dia}>
           <h3 className="mb-1 text-sm font-semibold">{fmtDate(dia)}</h3>
@@ -177,6 +181,7 @@ function TrilhaItem({ trilha, item, books }: { trilha: string; item: TrilhaProgr
           </select>
         </label>
       )}
+      <div className="ml-6"><ErroInline show={salvar.isError} /></div>
     </li>
   );
 }
@@ -269,7 +274,7 @@ export default function AprendizadoPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Stat label="Para revisar hoje" value={a.revisarHoje.length} />
             <Stat label="Aprendizados" value={a.notas.length} />
-            <Stat label="Nós com nível" value={a.arvore.flatMap((r) => r.filhos).filter((f) => f.nivel > 0).length} />
+            <Stat label="Nós com nível" value={a.arvore.flatMap((r) => [r, ...r.filhos]).filter((f) => f.nivel > 0).length} />
           </div>
           <Card title="Revisar hoje"><RevisarHoje notas={a.revisarHoje} /></Card>
           <Card title="Novo aprendizado"><NovoAprendizado books={allBooks} /></Card>
