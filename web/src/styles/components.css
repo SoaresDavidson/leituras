@@ -51,7 +51,7 @@
 
   /* ---- progress ---- */
   .track { @apply h-2 w-full overflow-hidden rounded-full bg-surface-2; }
-  .track-fill { @apply block h-full rounded-full bg-accent transition-[width] duration-500; }
+  .track-fill { @apply block h-full rounded-full bg-accent transition-[width] duration-500 motion-reduce:transition-none; }
 
   /* ---- navigation ---- */
   .nav-link {
