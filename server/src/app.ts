@@ -8,6 +8,7 @@ import type { Config } from './config';
 import { coverPath, fetchMissingCovers } from './covers';
 import { dayKey } from './dates';
 import type { Db } from './db';
+import { getFoco, setFila, updateFocoSettings } from './foco';
 
 const STATUSES: ReadingStatus[] = ['lendo', 'lido', 'pausado'];
 
@@ -23,6 +24,16 @@ function parsePatch(body: unknown): BookPatch | null {
   }
   if (arquivado !== undefined) { if (typeof arquivado !== 'boolean') return null; patch.arquivado = arquivado; }
   return patch;
+}
+
+const isIntIn = (v: unknown, min: number, max: number) => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;
+
+function parseFocoPatch(body: unknown): { limite?: number; prazoDias?: number } | null {
+  if (typeof body !== 'object' || body === null) return null;
+  const { limite, prazoDias } = body as Record<string, unknown>;
+  if (limite !== undefined && !isIntIn(limite, 1, 10)) return null;
+  if (prazoDias !== undefined && !isIntIn(prazoDias, 7, 365)) return null;
+  return { limite: limite as number | undefined, prazoDias: prazoDias as number | undefined };
 }
 
 export function createApp(db: Db, config: Config, options: { fetchCovers?: boolean } = {}) {
@@ -99,6 +110,24 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     if (!patch) { res.status(400).json({ error: 'Dados inválidos' }); return; }
     if (!updateBook(db, req.params.md5, patch, dayKey(Date.now() / 1000, config.timeZone))) { res.status(404).json({ error: 'Livro não encontrado' }); return; }
     res.json(getBook(db, req.params.md5, config.timeZone));
+  });
+
+  const currentFoco = () => getFoco(db, new Date().getFullYear(), config.timeZone);
+
+  api.put('/fila', (req, res) => {
+    const { md5s } = (req.body ?? {}) as { md5s?: unknown };
+    if (!Array.isArray(md5s) || !md5s.every((m) => typeof m === 'string')) { res.status(400).json({ error: 'Fila inválida' }); return; }
+    const result = setFila(db, md5s);
+    if (result === 'unknown') { res.status(400).json({ error: 'Livro não encontrado na fila' }); return; }
+    if (result === 'duplicate') { res.status(400).json({ error: 'Livro repetido na fila' }); return; }
+    res.json(currentFoco());
+  });
+
+  api.patch('/foco', (req, res) => {
+    const patch = parseFocoPatch(req.body);
+    if (!patch) { res.status(400).json({ error: 'Ajustes inválidos' }); return; }
+    updateFocoSettings(db, patch);
+    res.json(currentFoco());
   });
 
   api.get('/books/:md5/cover', (req, res) => {

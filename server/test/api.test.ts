@@ -140,3 +140,53 @@ describe('web api', () => {
     await agent.patch('/api/books/abc123').send({ statusManual: 'abandonado' }).expect(400);
   });
 });
+
+describe('foco api', () => {
+  const other: PluginBook = { ...book, id: 2, md5: 'def456', title: 'Fundação' };
+  const seedTwo = () => sendImport({ books: [book, other], stats: [] }).expect(200);
+
+  it('replaces the queue in order', async () => {
+    await seedTwo();
+    const agent = await login();
+    const res = await agent.put('/api/fila').send({ md5s: ['def456', 'abc123'] }).expect(200);
+    expect(res.body.fila.map((f: { book: { md5: string } }) => f.book.md5)).toEqual(['def456', 'abc123']);
+  });
+
+  it('clears the queue with an empty list', async () => {
+    await seedTwo();
+    const agent = await login();
+    await agent.put('/api/fila').send({ md5s: ['abc123'] }).expect(200);
+    const res = await agent.put('/api/fila').send({ md5s: [] }).expect(200);
+    expect(res.body.fila).toEqual([]);
+  });
+
+  it('rejects unknown, duplicated or malformed queues', async () => {
+    await seedTwo();
+    const agent = await login();
+    await agent.put('/api/fila').send({ md5s: ['abc123'] }).expect(200);
+    for (const body of [{ md5s: ['nao-existe'] }, { md5s: ['abc123', 'abc123'] }, { md5s: 'abc123' }, { md5s: [1] }]) {
+      const res = await agent.put('/api/fila').send(body).expect(400);
+      expect(typeof res.body.error).toBe('string');
+    }
+    const { n } = db.prepare("SELECT COUNT(*) AS n FROM fila WHERE md5 = 'abc123'").get() as { n: number };
+    expect(n).toBe(1);
+  });
+
+  it('updates focus settings within range', async () => {
+    const agent = await login();
+    const res = await agent.patch('/api/foco').send({ limite: 3, prazoDias: 30 }).expect(200);
+    expect(res.body).toMatchObject({ limite: 3, prazoDias: 30 });
+  });
+
+  it('rejects out-of-range or non-integer settings', async () => {
+    const agent = await login();
+    for (const body of [{ limite: 0 }, { limite: 11 }, { limite: 2.5 }, { limite: '3' }, { prazoDias: 6 }, { prazoDias: 366 }]) {
+      await agent.patch('/api/foco').send(body).expect(400);
+    }
+  });
+
+  it('requires a session for foco routes', async () => {
+    await request(app).put('/api/fila').send({ md5s: [] }).expect(401);
+    await request(app).patch('/api/foco').send({ limite: 3 }).expect(401);
+  });
+});

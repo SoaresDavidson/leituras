@@ -70,3 +70,24 @@ export function getFoco(db: Db, year: number, timeZone: string, now = Date.now()
     taxaConclusao: { lidos, abandonados, percentual: total === 0 ? null : Math.round((lidos / total) * 100) },
   };
 }
+
+// Replaces the whole queue; position = index in `md5s`
+export function setFila(db: Db, md5s: string[]): 'ok' | 'unknown' | 'duplicate' {
+  if (new Set(md5s).size !== md5s.length) return 'duplicate';
+  const exists = db.prepare('SELECT 1 FROM book WHERE md5 = ?');
+  if (md5s.some((md5) => exists.get(md5) === undefined)) return 'unknown';
+  const insert = db.prepare('INSERT INTO fila (md5, posicao) VALUES (?, ?)');
+  db.transaction(() => {
+    db.prepare('DELETE FROM fila').run();
+    md5s.forEach((md5, i) => insert.run(md5, i));
+  })();
+  return 'ok';
+}
+
+export function updateFocoSettings(db: Db, patch: { limite?: number; prazoDias?: number }): void {
+  const upsert = db.prepare('INSERT INTO setting (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
+  db.transaction(() => {
+    if (patch.limite !== undefined) upsert.run('foco.limite', String(patch.limite));
+    if (patch.prazoDias !== undefined) upsert.run('foco.prazo_dias', String(patch.prazoDias));
+  })();
+}
