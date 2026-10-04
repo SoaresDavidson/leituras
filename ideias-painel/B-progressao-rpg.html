@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leituras · Painel RPG (exploração de ideias)</title>
+<style>
+:root{
+  --bg:oklch(0.17 0.012 265);--surface:oklch(0.21 0.014 265);--surface2:oklch(0.26 0.016 265);
+  --fg:oklch(0.94 0.008 265);--muted:oklch(0.73 0.02 265);--border:oklch(0.33 0.02 265);
+  --accent:oklch(0.83 0.15 88);--accent-hi:oklch(0.89 0.15 88);--on-accent:oklch(0.2 0.03 88);
+  --danger:oklch(0.74 0.16 25);--ok:oklch(0.8 0.14 155);
+  --mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+  --sans:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1320px;margin:0 auto;padding:20px 20px 60px}
+h1,h2,h3,h4,p{margin:0}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px}
+.badge{width:96px;height:108px;position:relative;display:grid;place-items:center}
+.badge svg{position:absolute;inset:0}
+.badge b{position:relative;font:700 38px/1 var(--mono);color:var(--accent)}
+.badge small{position:absolute;bottom:14px;font:600 10px var(--mono);letter-spacing:.14em;color:var(--muted)}
+.hero h1{font:700 26px/1.2 var(--mono);letter-spacing:-.01em}
+.hero .sub{color:var(--muted);margin-top:2px}
+.chip{display:inline-block;font:600 11px/1 var(--mono);padding:4px 8px;border-radius:99px;border:1px solid var(--border);color:var(--fg);background:var(--surface2);vertical-align:middle}
+.xpbar{height:14px;border-radius:99px;background:var(--surface2);margin:14px 0 6px;position:relative;overflow:hidden}
+.xpbar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .5s}
+.xpline{display:flex;justify-content:space-between;gap:12px;font:12px var(--mono);color:var(--muted);flex-wrap:wrap}
+.stats{display:flex;gap:22px;margin-top:14px;flex-wrap:wrap}
+.stat b{display:block;font:700 20px/1.1 var(--mono)}
+.stat span{font-size:12px;color:var(--muted)}
+.cta{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:230px}
+.btn-primary{background:var(--accent);color:var(--on-accent);border:0;border-radius:10px;padding:13px 18px;font-weight:700;min-height:46px}
+.btn-primary:hover{background:var(--accent-hi);color:var(--on-accent)}
+.cta small{color:var(--muted);font-size:12px;line-height:1.4}
+
+/* toolbar */
+.bar{position:sticky;top:0;z-index:20;margin:16px -20px 0;padding:10px 20px;background:color-mix(in oklch,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap}
+.bar nav{display:flex;gap:4px;flex-wrap:wrap}
+.bar a{color:var(--fg);text-decoration:none;font-size:13px;padding:8px 11px;border-radius:8px;min-height:36px;display:inline-flex;align-items:center}
+.bar a:hover{background:var(--surface2)}
+.bar .sp{flex:1}
+.ghost{background:transparent;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;min-height:36px}
+.ghost:hover{background:var(--surface2);border-color:var(--muted)}
+.ghost[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.ghost[aria-pressed=true]:hover{background:oklch(0.88 0.008 265)}
+.count{font:12px var(--mono);color:var(--muted)}
+
+/* sections + widgets */
+.sec{margin-top:34px}
+.sec>h2{font:700 13px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.sec>p{color:var(--muted);margin:4px 0 14px;max-width:760px}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.w{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px 18px;min-width:0;display:flex;flex-direction:column}
+.s4{grid-column:span 4}.s5{grid-column:span 5}.s6{grid-column:span 6}.s7{grid-column:span 7}.s8{grid-column:span 8}.s12{grid-column:span 12}
+.w>header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px}
+.w h3{font:700 15px/1.3 var(--mono);letter-spacing:-.005em}
+.idea{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.idea::before{content:"IDEIA · ";font:700 10px var(--mono);letter-spacing:.12em;color:var(--fg)}
+.wtools{display:flex;gap:2px;flex:none}
+.ic{width:36px;height:36px;display:grid;place-items:center;background:transparent;border:0;border-radius:8px;color:var(--muted)}
+.ic:hover{background:var(--surface2);color:var(--fg)}
+.ic svg{width:17px;height:17px}
+.ic[data-act=keep] svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.ic[aria-pressed=true]{color:var(--accent)}
+.ic[aria-pressed=true] svg{fill:currentColor}
+.ic[data-act=hide] svg{stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.wb{flex:1;min-width:0}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.tag{font:600 11px/1 var(--mono);padding:3px 7px;border-radius:5px;border:1px solid;display:inline-block;white-space:nowrap}
+.bar2{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden;position:relative}
+.bar2 i{display:block;height:100%;border-radius:99px}
+.list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.list li{padding-bottom:10px;border-bottom:1px solid var(--border)}
+.list li:last-child{border:0;padding-bottom:0}
+.small{font-size:12.5px}
+.sbtn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12.5px;min-height:34px}
+.sbtn:hover{background:var(--surface2);border-color:var(--muted)}
+.sbtn[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.sbtn[aria-pressed=true]:hover{background:oklch(0.88 0.008 265)}
+.sbtn.warn{border-color:var(--danger);color:var(--danger)}
+.sbtn.warn:hover{background:var(--danger);color:oklch(0.2 0.03 25)}
+.scroll{overflow-x:auto}
+svg text{font-family:var(--mono)}
+
+/* tree */
+.treewrap{min-width:760px}
+.nd{cursor:pointer}
+.nd:focus-visible{outline:none}
+.nd:focus-visible .sel{stroke:var(--accent);opacity:1}
+.nd .sel{fill:none;stroke:var(--fg);stroke-width:2;opacity:0}
+.nd.on .sel{opacity:1}
+.detail{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:20px;border-top:1px solid var(--border);margin-top:10px;padding-top:14px}
+.detail h4{font:700 14px var(--mono);margin-bottom:6px}
+.k{font:600 10px var(--mono);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+
+/* quiz, pips */
+.opt{display:block;width:100%;text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;min-height:44px}
+.opt:hover:not(:disabled){border-color:var(--fg)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--ok)}.opt.wrong{border-color:var(--danger)}
+.pips{display:flex;gap:8px;margin:6px 0 10px}
+.pip{width:44px;height:44px;border-radius:10px;border:2px dashed var(--border);display:grid;place-items:center;font:700 12px var(--mono);color:var(--muted)}
+.pip.f{border:2px solid var(--ok);color:var(--ok);background:var(--surface2)}
+.pip.x{border:2px solid var(--danger);color:var(--danger);background:var(--surface2)}
+.check{display:flex;gap:10px;align-items:center;min-height:44px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+.heat{display:grid;grid-template-rows:repeat(7,11px);grid-auto-flow:column;grid-auto-columns:11px;gap:3px}
+.heat i{border-radius:2px;display:block}
+.medal{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center}
+.medal.lock{opacity:.62}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:10px;font-weight:600;box-shadow:0 10px 30px oklch(0 0 0/.5);opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:92vw}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.foot{margin-top:30px;color:var(--muted);font-size:12.5px}
+
+@media(max-width:980px){
+  .hero{grid-template-columns:1fr}.cta{min-width:0}
+  .s4,.s5,.s6,.s7,.s8{grid-column:span 12}
+  .detail{grid-template-columns:1fr}
+  .badge{margin:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="hero"></div>
+  <div class="bar" data-od-id="toolbar">
+    <nav aria-label="Seções">
+      <a href="#sec-prog">Progressão</a><a href="#sec-fim">Terminar o que começo</a><a href="#sec-sentir">Sentir o aprendizado</a><a href="#sec-habito">Hábito e ritmo</a>
+    </nav>
+    <span class="sp"></span>
+    <span class="count" id="count"></span>
+    <button class="ghost" data-act="filterKeep" id="fk" aria-pressed="false">Só as marcadas ★</button>
+    <button class="ghost" data-act="restore">Restaurar ocultas</button>
+  </div>
+  <main id="main"></main>
+  <p class="foot">Dados fictícios sobre livros reais de computação. Cada bloco tem um rótulo "Ideia" · use ★ para marcar o que fica e × para ocultar o que sai (a escolha é salva neste navegador). Capas omitidas nesta exploração.</p>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ============ DADOS ============ */
+const D=s=>new Date(s+'T12:00:00'),TODAY=D('2026-10-04'),DAY=864e5;
+const dd=(a,b)=>Math.round((a-b)/DAY);
+const fD=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','');
+const fDY=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}).replace(/\./g,'');
+const N=n=>Math.round(n).toLocaleString('pt-BR');
+const AREAS={algo:{n:'Algoritmos',s:'Algoritmos',h:250},sis:{n:'Sistemas',s:'Sistemas',h:160},red:{n:'Redes',s:'Redes',h:195},comp:{n:'Compiladores',s:'Compiladores',h:295},bd:{n:'Bancos de Dados',s:'Bancos',h:350},ia:{n:'IA',s:'IA',h:30}};
+const AK=Object.keys(AREAS);
+const col=(a,l=.78,c=.14)=>`oklch(${l} ${c} ${AREAS[a].h})`;
+const tagA=a=>`<span class="tag" style="color:${col(a)};border-color:${col(a,.5,.1)}">${AREAS[a].n}</span>`;
+
+const books=[
+ {id:'sicp',t:'Structure and Interpretation of Computer Programs',s:'SICP',au:'Abelson, Sussman',p:657,pr:100,st:'lido',a:'comp',mins:2140,start:D('2025-11-10'),last:D('2026-03-02'),fin:D('2026-03-02')},
+ {id:'kurose',t:'Computer Networking: A Top-Down Approach',s:'Kurose & Ross',au:'Kurose, Ross',p:864,pr:100,st:'lido',a:'red',mins:1980,start:D('2026-03-20'),last:D('2026-05-18'),fin:D('2026-05-18')},
+ {id:'ostep',t:'Operating Systems: Three Easy Pieces',s:'OSTEP',au:'Arpaci-Dusseau',p:700,pr:100,st:'lido',a:'sis',mins:1620,start:D('2026-05-22'),last:D('2026-07-09'),fin:D('2026-07-09')},
+ {id:'skiena',t:'The Algorithm Design Manual',s:'Algorithm Design Manual',au:'Skiena',p:748,pr:100,st:'lido',a:'algo',mins:1890,start:D('2026-07-12'),last:D('2026-08-21'),fin:D('2026-08-21')},
+ {id:'ci',t:'Crafting Interpreters',s:'Crafting Interpreters',au:'Nystrom',p:640,pr:78,st:'lendo',a:'comp',mins:1310,start:D('2026-08-25'),last:D('2026-10-03')},
+ {id:'clrs',t:'Introduction to Algorithms',s:'CLRS',au:'Cormen et al.',p:1312,pr:31,st:'lendo',a:'algo',mins:1180,start:D('2026-06-15'),last:D('2026-10-01')},
+ {id:'ddia',t:'Designing Data-Intensive Applications',s:'DDIA',au:'Kleppmann',p:614,pr:64,st:'lendo',a:'bd',mins:1020,start:D('2026-08-30'),last:D('2026-10-04')},
+ {id:'csapp',t:"Computer Systems: A Programmer's Perspective",s:'CS:APP',au:"Bryant, O'Hallaron",p:1120,pr:47,st:'lendo',a:'sis',mins:1260,start:D('2026-04-10'),last:D('2026-09-28')},
+ {id:'dbint',t:'Database Internals',s:'Database Internals',au:'Petrov',p:376,pr:22,st:'pausado',a:'bd',mins:230,start:D('2026-07-20'),last:D('2026-07-30')},
+ {id:'dl',t:'Deep Learning',s:'Deep Learning',au:'Goodfellow et al.',p:800,pr:9,st:'pausado',a:'ia',mins:190,start:D('2026-03-28'),last:D('2026-04-05')},
+ {id:'homl',t:'Hands-On Machine Learning',s:'Hands-On ML',au:'Géron',p:850,pr:14,st:'pausado',a:'ia',mins:340,start:D('2026-05-12'),last:D('2026-06-02')},
+ {id:'eac',t:'Engineering a Compiler',s:'Engineering a Compiler',au:'Cooper, Torczon',p:800,pr:0,st:'backlog',a:'comp',mins:0,start:null,last:null},
+ {id:'tapl',t:'Types and Programming Languages',s:'TAPL',au:'Pierce',p:623,pr:0,st:'backlog',a:'comp',mins:0,start:null,last:null},
+ {id:'hpbn',t:'High Performance Browser Networking',s:'High Perf. Browser Networking',au:'Grigorik',p:400,pr:0,st:'backlog',a:'red',mins:0,start:null,last:null},
+ {id:'aima',t:'Artificial Intelligence: A Modern Approach',s:'AIMA',au:'Russell, Norvig',p:1136,pr:0,st:'backlog',a:'ia',mins:0,start:null,last:null}
+];
+const B=id=>books.find(b=>b.id===id);
+const TREE={
+ algo:[['Complexidade e Big-O',[['skiena',12]]],['Ordenação e busca',[['skiena',30],['clrs',10]]],['Árvores e grafos',[['skiena',55],['clrs',25]]],['Prog. dinâmica',[['clrs',50]]],['NP-completude e fluxo',[['clrs',85]]]],
+ sis:[['Dados e binário',[['csapp',10]]],['Assembly x86-64',[['csapp',25]]],['Processos e sched.',[['ostep',30]]],['Memória virtual',[['ostep',60]]],['Cache e linking',[['csapp',70]]]],
+ red:[['Camadas TCP/IP',[['kurose',15]]],['HTTP e DNS',[['kurose',30]]],['TCP e congestion.',[['kurose',55]]],['Roteamento e BGP',[['kurose',80]]],['QUIC e WebRTC',[['hpbn',60]]]],
+ comp:[['Scanner e tokens',[['ci',12],['sicp',40]]],['Parsing e AST',[['ci',30]]],['Interpretador tree-walk',[['ci',55],['sicp',75]]],['VM de bytecode',[['ci',85]]],['Otimização e backends',[['eac',40]]]],
+ bd:[['Modelo de dados e SQL',[['ddia',10]]],['Índices B-tree/LSM',[['ddia',25]]],['Replicação e shards',[['ddia',55]]],['Transações e consenso',[['ddia',85]]],['WAL e buffer pool',[['dbint',60]]]],
+ ia:[['Álgebra e probabilidade',[['dl',12]]],['Regressão e classif.',[['homl',25]]],['Redes neurais',[['dl',35]]],['Busca e agentes',[['aima',20]]],['Transformers e LLMs',[['homl',80]]]]
+};
+const NODES=[];AK.forEach(a=>TREE[a].forEach(([n,src],i)=>NODES.push({id:a+(i+1),a,t:i+1,n,src})));
+const PATHS={comp:['sicp','ci','eac','tapl'],algo:['skiena','clrs'],sis:['csapp','ostep'],red:['kurose','hpbn'],bd:['ddia','dbint'],ia:['homl','dl','aima']};
+const NODE_XP=100;
+
+/* hábito: gerado de forma determinística */
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(42),heat=[];
+for(let i=0;i<365;i++){const d=new Date(TODAY-(364-i)*DAY),we=d.getDay()%6===0;let m=R()<(we?.5:.66)?Math.round(10+Math.pow(R(),1.6)*85):0;if(i>=356)m=Math.max(m,15+Math.round(R()*40));if(i===355)m=0;heat.push({d,m})}
+const sumMin=(a,b)=>heat.slice(a,b).reduce((s,x)=>s+x.m,0);
+const HOURS=[0,0,0,0,0,6,38,52,14,4,6,10,8,6,10,12,9,14,26,48,95,128,110,36];
+const QUIZ=[
+ {a:'red',q:'O que o controle de congestionamento do TCP ajusta para limitar a taxa de envio?',o:['A janela de congestionamento (cwnd)','O TTL dos pacotes','O MSS anunciado pelo receptor'],c:0,src:'Kurose & Ross · cap. 3'},
+ {a:'sis',q:'Em um escalonador MLFQ, o que acontece com um processo que gasta toda a sua fatia de tempo?',o:['Sobe de prioridade','Desce de prioridade','É encerrado pelo SO'],c:1,src:'OSTEP · cap. 8'},
+ {a:'bd',q:'Qual a vantagem típica de uma LSM-tree sobre uma B-tree?',o:['Leituras sempre mais rápidas','Dispensa compactação','Escritas sequenciais, mais baratas em disco'],c:2,src:'DDIA · cap. 3'}
+];
+const TITLES=[[0,'Aprendiz de Terminal'],[5,'Escavador de Stack Traces'],[10,'Domador de Ponteiros'],[15,'Arquiteto de Abstrações'],[20,'Mestre de Invariantes'],[25,'Lenda do Mainframe']];
+const CLASSES=[
+ {n:'Engenheiro de Sistemas',f:['sis','red']},{n:'Arquiteto de Dados',f:['bd','sis']},{n:'Construtor de Linguagens',f:['comp','sis']},
+ {n:'Teórico',f:['algo','comp']},{n:'Alquimista de IA',f:['ia','algo']},{n:'Polímata',f:AK}
+];
+
+/* ============ ESTADO ============ */
+let ui={};try{ui=JSON.parse(localStorage.getItem('leituras-rpg-ui')||'{}')}catch(e){}
+const state={
+  bonus:0,todayMin:18,todayPages:6,note:false,quizOk:false,awarded:new Set(),focus:'ci',sel:'comp4',
+  quiz:{i:0,pick:null,got:new Set()},reviewed:{},
+  hidden:new Set(ui.hidden||[]),keep:new Set(ui.keep||[]),onlyKeep:false,
+  log:[['Hoje · 21:40','DDIA · 22 pág · 31 min',22,31,1.1],['Hoje · 07:15','Crafting Interpreters · 14 pág · 18 min',14,18,1.1],['Ontem · 22:05','CS:APP · 9 pág · 24 min',9,24,1.1],['Ontem · 06:50','CLRS · 6 pág · 22 min',6,22,1.1],['02 out','DDIA · 18 pág · 28 min',18,28,1.1]].map(([w,l,p,m,x])=>({w,l,xp:Math.round((p*10+m)*x),m:x}))
+};
+const saveUi=()=>{try{localStorage.setItem('leituras-rpg-ui',JSON.stringify({hidden:[...state.hidden],keep:[...state.keep]}))}catch(e){}};
+
+/* ============ CÁLCULOS ============ */
+const pagesRead=b=>Math.round(b.p*b.pr/100);
+const bookXp=b=>pagesRead(b)*10+b.mins+(b.pr>=100?300+2*b.p:0);
+const nodePct=nd=>Math.max(...nd.src.map(([b,at])=>Math.min(1,B(b).pr/at)));
+const nodeState=nd=>{const p=nodePct(nd);return p>=1?'done':p>0?'prog':'lock'};
+const nodeRem=nd=>Math.min(...nd.src.map(([b,at])=>Math.max(0,(at-B(b).pr)/100*B(b).p)));
+const nodeBest=nd=>nd.src.reduce((m,s)=>(s[1]-B(s[0]).pr<m[1]-B(m[0]).pr?s:m));
+const nodeDate=nd=>{let best=null;nd.src.forEach(([id,at])=>{const b=B(id);if(b.pr>=at&&b.start){const t=+b.start+(+b.last-+b.start)*at/b.pr;if(best===null||t<best)best=t}});return best?new Date(best):null};
+const areaDone=a=>NODES.filter(n=>n.a===a&&nodeState(n)==='done').length;
+const areaScore=a=>NODES.filter(n=>n.a===a).reduce((s,n)=>s+nodePct(n),0);
+const lvlXp=n=>250*n*n;
+const mpp=()=>{const rd=books.filter(b=>b.pr>0);return rd.reduce((s,b)=>s+b.mins,0)/rd.reduce((s,b)=>s+pagesRead(b),0)};
+function totalXp(){return books.reduce((s,b)=>s+bookXp(b),0)+NODES.filter(n=>nodeState(n)==='done').length*NODE_XP+state.bonus}
+const levelOf=x=>Math.floor(Math.sqrt(x/250));
+const titleOf=l=>TITLES.filter(t=>l>=t[0]).pop()[1];
+const reading=()=>books.filter(b=>b.st==='lendo');
+const streak=()=>{let s=0;for(let i=364;i>=0;i--){if(heat[i].m>0||(i===364&&state.todayMin>0))s++;else break}return s};
+const mult=()=>(streak()>=30?1.25:streak()>=7?1.1:1)+(reading().length<=2?.1:0);
+const pace=()=>{const mpd=sumMin(335,365)/30;return{mpd,ppd:mpd/mpp(),xpd:mpd/mpp()*10+mpd}};
+const classScores=()=>CLASSES.map(c=>({...c,sc:c.n==='Polímata'?AK.reduce((s,a)=>s+Math.min(1,areaDone(a)/2),0)/6:c.f.reduce((s,a)=>s+areaScore(a),0)/10})).sort((a,b)=>b.sc-a.sc);
+const finishedYear=()=>books.filter(b=>b.st==='lido'&&b.fin&&b.fin.getFullYear()===2026);
+const lastTouch=a=>{const t=books.filter(b=>b.a===a&&b.last).map(b=>+b.last);const r=state.reviewed[a];return new Date(Math.max(...t,r?+r:0))};
+
+/* ============ UI HELPERS ============ */
+const ICON_STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.7 6.3.8-4.6 4.3 1.2 6.2L12 17l-5.6 3 1.2-6.2L3 9.5l6.3-.8z"/></svg>';
+const ICON_X='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+let WN=0;
+function W(id,title,idea,span,body){WN++;if(state.hidden.has(id)||(state.onlyKeep&&!state.keep.has(id)))return'';
+ return`<section class="w s${span}" data-od-id="widget-${id}"><header><div><h3>${title}</h3><p class="idea">${idea}</p></div><div class="wtools"><button class="ic" data-act="keep" data-id="${id}" aria-pressed="${state.keep.has(id)}" aria-label="Marcar para manter" title="Marcar para manter">${ICON_STAR}</button><button class="ic" data-act="hide" data-id="${id}" aria-label="Ocultar widget" title="Ocultar">${ICON_X}</button></div></header><div class="wb">${body}</div></section>`}
+const bar=(p,c='var(--accent)',h=8)=>`<div class="bar2" style="height:${h}px"><i style="width:${Math.max(0,Math.min(100,p*100))}%;background:${c}"></i></div>`;
+function toast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),4200)}
+
+/* ============ WIDGETS ============ */
+function wTree(){
+ const cw=150,x0=80,top=96,step=76,H=500;
+ let s=`<div class="scroll"><div class="treewrap"><svg viewBox="0 0 900 ${H}" width="100%" role="group" aria-label="Árvore de habilidades por área">`;
+ AK.forEach((a,ci)=>{const x=x0+ci*cw;
+  s+=`<text x="${x}" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="${col(a)}">${AREAS[a].s.toUpperCase()}</text><text x="${x}" y="46" text-anchor="middle" font-size="11" fill="var(--muted)">${areaDone(a)}/5 nós</text>`;
+  const ns=NODES.filter(n=>n.a===a);
+  ns.forEach((n,i)=>{if(i===4)return;const y1=H-top+20-(i)*step-40,y2=y1-step;const walked=nodePct(ns[i+1])>0;
+   s+=`<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${walked?col(a):'var(--border)'}" stroke-width="${walked?3:2}" ${walked?'':'stroke-dasharray="4 5"'}/>`});
+  ns.forEach((n,i)=>{const y=H-top+20-i*step-40,st=nodeState(n),p=nodePct(n),C=2*Math.PI*24;
+   const words=n.n.split(' ');let l1='',l2='';words.forEach(w=>{if((l1+' '+w).trim().length<=16&&!l2)l1=(l1+' '+w).trim();else l2=(l2+' '+w).trim()});
+   const lab=`${n.n} — ${st==='done'?'dominado':st==='prog'?Math.round(p*100)+'% concluído':'bloqueado'}`;
+   s+=`<g class="nd ${st} ${state.sel===n.id?'on':''}" data-act="node" data-n="${n.id}" tabindex="0" role="button" aria-label="${lab}" transform="translate(${x} ${y})">
+    <circle class="sel" r="30"/><circle r="24" fill="var(--surface)" stroke="var(--border)" stroke-width="4"/>
+    ${p>0?`<circle r="24" fill="none" stroke="${col(a)}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C*p} ${C}" transform="rotate(-90)"/>`:''}
+    <circle r="17" fill="${st==='done'?col(a):'var(--surface2)'}"/>
+    ${st==='done'?`<path d="M-7 0l5 5 9-10" fill="none" stroke="oklch(0.2 0.03 ${AREAS[a].h})" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`:`<text y="4" text-anchor="middle" font-size="13" font-weight="700" fill="${st==='lock'?'var(--muted)':'var(--fg)'}">${n.t}</text>`}
+    <text y="43" text-anchor="middle" font-size="11" fill="${st==='lock'?'var(--muted)':'var(--fg)'}">${l1}</text>${l2?`<text y="55" text-anchor="middle" font-size="11" fill="${st==='lock'?'var(--muted)':'var(--fg)'}">${l2}</text>`:''}</g>`});
+ });
+ s+='</svg></div></div>';
+ const nd=NODES.find(n=>n.id===state.sel),st=nodeState(nd),p=nodePct(nd),dt=nodeDate(nd),bs=nodeBest(nd),rem=nodeRem(nd);
+ s+=`<div class="detail" aria-live="polite"><div><div class="k">Nó selecionado</div><h4>${nd.n}</h4>${tagA(nd.a)} <span class="tag" style="color:var(--muted);border-color:var(--border)">Nível ${nd.t} de 5</span>
+  <p class="small muted" style="margin-top:8px">${st==='done'?`Dominado em ${fDY(dt)}. Rendeu +${NODE_XP} XP.`:st==='prog'?`Em progresso. Termine para ganhar +${NODE_XP} XP.`:`Ainda sem leitura relacionada. Ler a fonte abaixo abre o nó (+${NODE_XP} XP).`}</p></div>
+  <div><div class="k">Fontes (livro · % necessário)</div><ul class="list small">${nd.src.map(([id,at])=>{const b=B(id);return`<li><div class="row"><span>${b.s}</span><span class="mono muted">${Math.round(b.pr)}% / ${at}%</span></div>${bar(Math.min(1,b.pr/at),col(nd.a),6)}</li>`}).join('')}</ul></div>
+  <div><div class="k">Para destravar</div>${st==='done'?'<p class="small muted">Nada pendente. Revisão espaçada mantém o nó brilhando.</p>':`<p class="mono" style="font-size:20px;font-weight:700">${N(rem)} pág.</p><p class="small muted">≈ ${(rem*mpp()/60).toFixed(1).replace('.',',')} h em <b style="color:var(--fg)">${B(bs[0]).s}</b></p>`}</div></div>`;
+ return s}
+
+function wRadar(){
+ const cx=130,cy=125,r=92;let s='<svg viewBox="-60 0 380 250" width="100%" role="img" aria-label="Radar de domínio por área">';
+ [.25,.5,.75,1].forEach(k=>s+=`<polygon points="${AK.map((_,i)=>{const t=-Math.PI/2+i*Math.PI/3;return`${cx+Math.cos(t)*r*k},${cy+Math.sin(t)*r*k}`}).join(' ')}" fill="none" stroke="var(--border)"/>`);
+ const pts=AK.map((a,i)=>{const t=-Math.PI/2+i*Math.PI/3,v=areaScore(a)/5;return[cx+Math.cos(t)*r*v,cy+Math.sin(t)*r*v,t,a,v]});
+ AK.forEach((a,i)=>{const t=-Math.PI/2+i*Math.PI/3;s+=`<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(t)*r}" y2="${cy+Math.sin(t)*r}" stroke="var(--border)"/>`});
+ s+=`<polygon points="${pts.map(p=>p[0]+','+p[1]).join(' ')}" fill="var(--accent)" fill-opacity=".28" stroke="var(--accent)" stroke-width="2"/>`;
+ pts.forEach(p=>{const lx=cx+Math.cos(p[2])*(r+14),ly=cy+Math.sin(p[2])*(r+14),an=Math.cos(p[2])>.2?'start':Math.cos(p[2])<-.2?'end':'middle';
+  s+=`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${col(p[3])}"/><text x="${lx}" y="${ly+4}" text-anchor="${an}" font-size="11" fill="var(--fg)">${AREAS[p[3]].s}</text><text x="${lx}" y="${ly+16}" text-anchor="${an}" font-size="10" fill="var(--muted)">${Math.round(p[4]*100)}%</text>`});
+ const weak=pts.slice().sort((a,b)=>a[4]-b[4])[0];
+ return s+`</svg><p class="small muted">Ponto fraco: <b style="color:var(--fg)">${AREAS[weak[3]].n}</b>. O radar mostra onde o próximo livro rende mais "crescimento de atributo".</p>`}
+
+function wClasses(){const cs=classScores();
+ return`<ul class="list">${cs.map((c,i)=>`<li><div class="row"><b class="mono" style="font-size:13px">${c.n}</b>${i===0?'<span class="tag" style="color:var(--accent);border-color:var(--accent)">CLASSE ATUAL</span>':`<span class="mono muted small">${Math.round(c.sc*100)}%</span>`}</div><p class="small muted" style="margin:2px 0 6px">${c.n==='Polímata'?'Pelo menos 2 nós em todas as 6 áreas':c.f.map(a=>AREAS[a].s).join(' + ')}</p>${bar(c.sc,i===0?'var(--accent)':'var(--muted)',6)}</li>`).join('')}</ul>`}
+
+function wLevels(){const L=levelOf(totalXp());
+ const R=[[L+1,'Slot extra de "livro ativo" e tema de cor novo'],[L+2,'+1 escudo de streak'],[L+4,'Novo título de leitor'],[L+7,'Carta lendária na coleção'],[L+10,'Recompensa real: comprar o próximo livro físico']];
+ return`<ul class="list">${R.map(([l,t],i)=>`<li class="row" style="align-items:flex-start"><span class="mono" style="font-size:16px;font-weight:700;min-width:54px;color:${i===0?'var(--accent)':'var(--fg)'}">Nv ${l}</span><span class="small" style="flex:1">${t}</span></li>`).join('')}</ul><p class="small muted" style="margin-top:10px">Mistura recompensas do app com recompensas reais definidas por você.</p>`}
+
+function wRules(){const m=mult();
+ const rows=[['Página lida','+10 XP',1],['Minuto de leitura','+1 XP',1],['Nó da árvore desbloqueado','+100 XP',1],['Livro concluído','+300 XP +2 por pág.',1],['Streak ≥ 7 dias','× 1,10',streak()>=7],['Streak ≥ 30 dias','× 1,25',streak()>=30],['Foco: no máx. 2 livros ativos','+ 0,10',reading().length<=2],['Revisão espaçada','+60 XP',1]];
+ return`<ul class="list small">${rows.map(r=>`<li class="row"><span>${r[0]}</span><span class="mono" style="color:${r[2]?'var(--fg)':'var(--muted)'}">${r[1]} ${r[2]?'':'· inativo'}</span></li>`).join('')}</ul><p class="mono" style="margin-top:10px">Multiplicador agora: <b style="color:var(--accent)">× ${m.toFixed(2).replace('.',',')}</b></p>`}
+
+function wLog(){return`<ul class="list small">${state.log.slice(0,7).map(l=>`<li class="row"><div><div>${l.l}</div><div class="muted mono" style="font-size:11px">${l.w} · × ${l.m.toFixed(2).replace('.',',')}</div></div><b class="mono" style="color:var(--accent)">+${l.xp}</b></li>`).join('')}</ul>`}
+
+function wWip(){const rd=reading(),lim=2,ex=Math.max(0,rd.length-lim);
+ let pips='';for(let i=0;i<Math.max(lim,rd.length);i++)pips+=`<div class="pip ${i>=lim?'x':i<rd.length?'f':''}">${i>=lim?'+'+(i-lim+1):i<rd.length?(i+1):'—'}</div>`;
+ return`<div class="pips" role="img" aria-label="${rd.length} livros ativos para um limite de ${lim}">${pips}</div>
+  <p class="small">${ex?`<b style="color:var(--danger)">${ex} livro${ex>1?'s':''} acima do limite.</b> Pause para recuperar o bônus de foco (+0,10 no multiplicador).`:`<b style="color:var(--ok)">Dentro do limite.</b> Bônus de foco ativo.`}</p>
+  <ul class="list" style="margin-top:12px">${rd.map(b=>`<li class="row"><div style="min-width:0"><div>${b.s}</div><div class="mono muted" style="font-size:11px">${Math.round(b.pr)}% · último: ${fD(b.last)}</div></div><button class="sbtn" data-act="pause" data-id="${b.id}">Pausar</button></li>`).join('')||'<li class="muted">Nenhum livro ativo.</li>'}</ul>`}
+
+function wPact(){const rd=reading(),f=B(state.focus),pc=pace().ppd,rem=f?f.p*(100-f.pr)/100:0;
+ return`<div role="group" aria-label="Escolha o livro da semana" style="display:flex;flex-direction:column;gap:6px">${rd.map(b=>`<button class="sbtn" data-act="focus" data-id="${b.id}" aria-pressed="${b.id===state.focus}" style="text-align:left;min-height:40px"><span class="row"><span>${b.s}</span><span class="mono" style="font-size:11px">${Math.round(b.pr)}%</span></span></button>`).join('')}</div>
+  ${f?`<p class="small" style="margin-top:12px">Compromisso: terminar <b>${f.s}</b> até <b class="mono">${fD(new Date(+TODAY+Math.ceil(rem/pc)*DAY))}</b> (~${Math.ceil(rem/pc)} dias a ${pc.toFixed(1).replace('.',',')} pág./dia).</p><p class="small muted">Recompensa: baú de conclusão +${N(300+2*f.p)} XP. É o livro que recebe o XP do botão de sessão.</p>`:''}`}
+
+function wBoss(){const bs=books.filter(b=>b.st==='lendo'&&b.p>=550).sort((a,b)=>(a.p*(100-a.pr))-(b.p*(100-b.pr))),pc=pace().ppd;
+ return`<ul class="list">${bs.map(b=>{const rem=b.p*(100-b.pr)/100,ph=Math.min(4,Math.floor(b.pr/25)+1);
+  return`<li><div class="row"><b class="mono" style="font-size:13px">${b.s}</b><span class="mono muted small">Fase ${ph}/4 · ${N(rem)} pág. de HP</span></div>
+  <div style="position:relative;margin:7px 0 4px"><div class="bar2" style="height:14px"><i style="width:${100-b.pr}%;background:${col(b.a,.7,.15)}"></i></div>${[25,50,75].map(t=>`<span style="position:absolute;left:${t}%;top:0;bottom:0;width:2px;background:var(--bg)"></span>`).join('')}</div>
+  <div class="small muted">Só ele: ~${Math.ceil(rem/pc)} dias · cada fase vencida: +120 XP</div></li>`}).join('')}</ul>`}
+
+function wFinal(){const l=books.filter(b=>b.st==='lendo'&&b.pr>=60).sort((a,b)=>b.pr-a.pr);
+ return l.length?`<ul class="list">${l.map(b=>{const rem=b.p*(100-b.pr)/100;return`<li><div class="row"><b class="mono" style="font-size:13px">${b.s}</b><span class="tag" style="color:var(--accent);border-color:var(--accent)">+${N(300+2*b.p)} XP</span></div>
+  <p class="small muted" style="margin:3px 0 6px">Faltam ${N(rem)} pág. · ≈ ${(rem*mpp()/60).toFixed(1).replace('.',',')} h para abrir o baú</p>${bar(b.pr/100,col(b.a),8)}</li>`}).join('')}</ul>`:'<p class="muted">Nenhum livro acima de 60% agora.</p>'}
+
+function wForecast(){const rd=reading().map(b=>({b,r:b.p*(100-b.pr)/100})).sort((a,b)=>a.r-b.r),pc=pace().ppd,n=rd.length;
+ if(!n)return'<p class="muted">Sem livros ativos.</p>';
+ let cum=0,par=0,prev=0;rd.forEach((x,i)=>{cum+=x.r;x.seq=cum/pc;par+=(x.r-prev)*(n-i)/pc;prev=x.r;x.par=par});
+ const mx=Math.max(...rd.map(x=>x.par));
+ return`<ul class="list small">${rd.map(x=>`<li><div class="row"><b class="mono" style="font-size:13px">${x.b.s}</b><span class="muted mono" style="font-size:11px">${N(x.r)} pág.</span></div>
+  <div style="display:grid;grid-template-columns:90px 1fr 56px;gap:8px;align-items:center;margin-top:6px"><span>Um por vez</span>${bar(x.seq/mx,'var(--ok)',8)}<span class="mono">${fD(new Date(+TODAY+Math.ceil(x.seq)*DAY))}</span>
+  <span>Todos juntos</span>${bar(x.par/mx,'var(--danger)',8)}<span class="mono">${fD(new Date(+TODAY+Math.ceil(x.par)*DAY))}</span></div></li>`).join('')}</ul><p class="small muted" style="margin-top:10px">Mesmo ritmo, mesma leitura: a diferença é só quando cada livro vira "concluído".</p>`}
+
+function wGrave(){const p=books.filter(b=>b.st==='pausado').sort((a,b)=>a.last-b.last);
+ return`<ul class="list">${p.map(b=>{const d=dd(TODAY,b.last);return`<li><div class="row"><div><b class="mono" style="font-size:13px">${b.s}</b><div class="small muted">${Math.round(b.pr)}% · parado há ${d} dias</div></div><span class="tag" style="color:${d>90?'var(--danger)':'var(--muted)'};border-color:${d>90?'var(--danger)':'var(--border)'}">${d>90?'ASSOMBRADO':'ADORMECIDO'}</span></div>
+  <div class="row" style="margin-top:8px;justify-content:flex-start"><button class="sbtn" data-act="resume" data-id="${b.id}">Ressuscitar (+50 XP em 20 pág.)</button><button class="sbtn" data-act="retire" data-id="${b.id}">Aposentar</button></div></li>`}).join('')||'<li class="muted">Cemitério vazio.</li>'}</ul>
+  <p class="small muted" style="margin-top:10px">Aposentar é uma decisão legítima: tira o peso do "devo" e libera slot.${books.some(b=>b.st==='aposentado')?` Memorial: ${books.filter(b=>b.st==='aposentado').map(b=>b.s).join(', ')}.`:''}</p>`}
+
+function wQuests(){
+ const q=AK.map(a=>{const nd=NODES.filter(n=>n.a===a).find(n=>nodeState(n)!=='done');return nd&&{nd,rem:nodeRem(nd),b:B(nodeBest(nd)[0])}}).filter(Boolean).sort((a,b)=>a.rem-b.rem);
+ return`<ul class="list">${q.map((x,i)=>`<li><div class="row"><div style="min-width:0"><div>${i===0?'<span class="tag" style="color:var(--accent);border-color:var(--accent)">MAIS PERTO</span> ':''}${tagA(x.nd.a)} <b class="mono" style="font-size:13px">${x.nd.n}</b></div><div class="small muted" style="margin-top:3px">Ler ${N(x.rem)} pág. de ${x.b.s} (~${(x.rem*mpp()/60).toFixed(1).replace('.',',')} h)${x.b.st!=='lendo'?` · <i>${x.b.st==='backlog'?'ainda não iniciado':'pausado'}</i>`:''}</div></div><b class="mono" style="color:var(--accent)">+${NODE_XP}</b></div></li>`).join('')}</ul>
+  <h4 class="k" style="margin:14px 0 8px">Rota de livros por área</h4>
+  ${AK.map(a=>`<div class="small" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><span style="min-width:96px;color:${col(a)}">${AREAS[a].s}</span>${PATHS[a].map((id,i)=>{const b=B(id);return`${i?'<span class="muted">→</span>':''}<span class="tag" style="color:${b.st==='lido'?'var(--ok)':b.st==='lendo'?'var(--fg)':'var(--muted)'};border-color:${b.st==='lido'?'var(--ok)':'var(--border)'};background:${b.st==='lendo'?'var(--surface2)':'transparent'}">${b.s}${b.st==='lido'?' ✓':b.st==='lendo'?' '+Math.round(b.pr)+'%':''}</span>`}).join('')}</div>`).join('')}`}
+
+function wDiary(){
+ const u=NODES.filter(n=>nodeState(n)==='done').map(n=>({n,d:nodeDate(n)})).sort((a,b)=>b.d-a.d),r90=u.filter(x=>dd(TODAY,x.d)<=90).length;
+ return`<div class="row" style="justify-content:flex-start;gap:18px;margin-bottom:12px"><div><b class="mono" style="font-size:26px;color:var(--accent)">${r90}</b><div class="small muted">nós nos últimos 90 dias</div></div><div><b class="mono" style="font-size:26px">${u.length}/30</b><div class="small muted">nós no total</div></div></div>
+  <ul class="list small">${u.slice(0,7).map(x=>`<li class="row"><span>${tagA(x.n.a)} ${x.n.n}</span><span class="mono muted">${fD(x.d)}</span></li>`).join('')}</ul>`}
+
+function wRust(){
+ return`<ul class="list">${AK.map(a=>{const d=dd(TODAY,lastTouch(a)),f=Math.max(0,1-d/120),rusty=d>60;
+  return`<li><div class="row"><span>${tagA(a)}</span><span class="small mono" style="color:${rusty?'var(--danger)':'var(--muted)'}">${d===0?'revisado hoje':d+' dias sem tocar'}</span></div><div class="row" style="margin-top:6px;gap:12px"><div style="flex:1">${bar(f,rusty?'var(--danger)':col(a),8)}</div>${rusty?`<button class="sbtn warn" data-act="review" data-id="${a}">Revisar (+60 XP)</button>`:'<span class="small muted" style="min-width:96px;text-align:right">em dia</span>'}</div></li>`}).join('')}</ul><p class="small muted" style="margin-top:10px">Acima de 60 dias, os nós da área ficam "enferrujados". Revisar leva 10 min.</p>`}
+
+function wQuiz(){const q=QUIZ[state.quiz.i%QUIZ.length],k=state.quiz,done=k.pick!==null;
+ return`<div style="margin-bottom:8px">${tagA(q.a)} <span class="small muted">${q.src}</span></div><p style="margin-bottom:12px">${q.q}</p>
+  ${q.o.map((o,j)=>`<button class="opt ${done?(j===q.c?'right':j===k.pick?'wrong':''):''}" data-act="quiz" data-o="${j}" ${done?'disabled':''}>${o}${done&&j===q.c?' <b>· correta</b>':''}${done&&j===k.pick&&j!==q.c?' <b>· errada</b>':''}</button>`).join('')}
+  ${done?`<div class="row"><span class="small">${k.pick===q.c?(k.got.has(k.i)?'Acertou. +40 XP':'Acertou.'):'Quase. Releia o capítulo citado.'}</span><button class="sbtn" data-act="quizNext">Próxima pergunta</button></div>`:'<p class="small muted">Acertar vale +40 XP e conta como missão diária.</p>'}`}
+
+function wDaily(){
+ const D=[['Ler 25 minutos',30,state.todayMin>=25,`${Math.min(25,state.todayMin)}/25 min`],['Ler 10 páginas',30,state.todayPages>=10,`${Math.min(10,state.todayPages)}/10 pág.`],['Anotar 1 ideia do capítulo',20,state.note,''],['Responder o desafio relâmpago',20,state.quizOk,'']];
+ return`<ul class="list">${D.map((d,i)=>`<li class="row"><label class="check" style="flex:1">${i===2?`<input type="checkbox" data-act="note" ${state.note?'checked':''}>`:`<input type="checkbox" disabled ${d[2]?'checked':''}>`}<span><span style="${d[2]?'text-decoration:line-through;color:var(--muted)':''}">${d[0]}</span>${d[3]?`<span class="mono muted small" style="display:block">${d[3]}</span>`:''}</span></label><b class="mono small" style="color:${d[2]?'var(--ok)':'var(--accent)'}">+${d[1]}</b></li>`).join('')}</ul>
+  <div style="margin-top:14px"><div class="row small"><span><b>Semanal:</b> 10 pág. do livro da semana por 5 dias</span><span class="mono">3/5</span></div>${bar(.6,'var(--accent)',8)}<p class="small muted" style="margin-top:4px">+150 XP ao completar</p></div>`}
+
+function wStreak(){const s=streak(),ms=[14,30,100],nx=ms.find(m=>m>s)||ms[2];
+ return`<div class="row" style="justify-content:flex-start;gap:16px"><b class="mono" style="font-size:44px;line-height:1;color:var(--accent)">${s}</b><div><div>dias seguidos</div><div class="small muted">Recorde: 23 dias</div></div></div>
+  <div style="display:flex;gap:4px;margin:14px 0" role="img" aria-label="Últimos 14 dias">${heat.slice(351).map(x=>`<i style="flex:1;height:22px;border-radius:4px;background:${x.m?'var(--accent)':'var(--surface2)'}" title="${fD(x.d)}: ${x.m} min"></i>`).join('')}</div>
+  <div class="row small"><span>Próximo marco: <b>${nx} dias</b>${nx===14?' (+1 escudo)':nx===30?' (× 1,25 XP)':' (título raro)'}</span><span class="mono">${s}/${nx}</span></div>${bar(s/nx,'var(--accent)',8)}
+  <p class="small muted" style="margin-top:10px">Escudo de streak: 1 disponível. Cobre 1 dia perdido sem zerar a sequência.</p>`}
+
+function wGoal(){const f=finishedYear().length,goal=8,doy=dd(TODAY,D('2025-12-31')),exp=goal*doy/365,m=Array(12).fill(0);finishedYear().forEach(b=>m[b.fin.getMonth()]++);
+ return`<div class="row" style="justify-content:flex-start;gap:14px"><b class="mono" style="font-size:36px;line-height:1">${f}<span class="muted" style="font-size:20px">/${goal}</span></b><div class="small muted">livros concluídos em 2026<br>esperado hoje: ${exp.toFixed(1).replace('.',',')}</div></div>
+  <div style="position:relative;margin:14px 0 4px">${bar(f/goal,'var(--accent)',12)}<span style="position:absolute;left:${exp/goal*100}%;top:-4px;bottom:-4px;width:2px;background:var(--fg)" title="Ritmo esperado"></span></div>
+  <p class="small ${f<exp?'':'muted'}" style="${f<exp?'color:var(--danger)':''}">${f<exp?`Atrás ${(exp-f).toFixed(1).replace('.',',')} livro. Para fechar a meta: 1 livro a cada ${Math.round((365-doy)/(goal-f))} dias.`:'No ritmo.'}</p>
+  <svg viewBox="0 0 240 60" width="100%" style="margin-top:8px" role="img" aria-label="Livros concluídos por mês">${m.map((v,i)=>`<rect x="${i*20+3}" y="${52-v*22}" width="14" height="${Math.max(2,v*22)}" rx="2" fill="${v?'var(--accent)':'var(--surface2)'}"/><text x="${i*20+10}" y="60" text-anchor="middle" font-size="7" fill="var(--muted)">${'JFMAMJJASOND'[i]}</text>`).join('')}</svg>`}
+
+function wHeat(){
+ const first=heat[0].d.getDay(),cells=[];for(let i=0;i<first;i++)cells.push('<i></i>');
+ const lv=m=>m===0?0:m<15?1:m<30?2:m<50?3:4,L=[.27,.42,.56,.7,.84];
+ heat.forEach(x=>{const l=lv(x.m);cells.push(`<i style="background:${l?`oklch(${L[l]} ${.06+l*.025} 88)`:'var(--surface2)'}" title="${fDY(x.d)}: ${x.m} min"></i>`)});
+ let ml='',prev=-1;for(let c=0;c<Math.ceil(cells.length/7);c++){const d=heat[Math.max(0,c*7-first)].d,mo=d.getMonth();if(mo!==prev){ml+=`<span style="position:absolute;left:${c*14}px">${d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</span>`;prev=mo}}
+ const act=heat.filter(x=>x.m>0).length;
+ return`<div class="scroll"><div style="position:relative;height:16px;font:11px var(--mono);color:var(--muted);min-width:750px">${ml}</div><div class="heat" style="min-width:750px" role="img" aria-label="Minutos de leitura por dia nos últimos 365 dias">${cells.join('')}</div></div>
+  <div class="row small muted" style="margin-top:10px;flex-wrap:wrap"><span><b style="color:var(--fg)">${act}</b> dias ativos · <b style="color:var(--fg)">${N(sumMin(0,365)/60)} h</b> em 365 dias</span><span class="row" style="gap:4px">menos ${[0,1,2,3,4].map(l=>`<i style="width:11px;height:11px;border-radius:2px;background:${l?`oklch(${L[l]} ${.06+l*.025} 88)`:'var(--surface2)'}"></i>`).join('')} mais</span></div>`}
+
+function wWeekly(){const wk=[];for(let k=0;k<12;k++){const e=365-(11-k)*7;wk.push(sumMin(e-7,e)*5)}
+ const mx=Math.max(...wk),cur=wk[11],pr=wk[10];
+ return`<svg viewBox="0 0 360 150" width="100%" role="img" aria-label="XP por semana nas últimas 12 semanas">${[0,.5,1].map(t=>`<line x1="0" x2="360" y1="${120-t*100}" y2="${120-t*100}" stroke="var(--border)"/>`).join('')}${wk.map((v,i)=>`<rect x="${i*30+5}" y="${120-v/mx*100}" width="20" height="${v/mx*100}" rx="3" fill="${i===11?'var(--accent)':'var(--muted)'}" fill-opacity="${i===11?1:.55}"/><text x="${i*30+15}" y="${120-v/mx*100-4}" text-anchor="middle" font-size="9" fill="var(--muted)">${v>=1000?(v/1000).toFixed(1).replace('.',',')+'k':v}</text>${i%3===2?`<text x="${i*30+15}" y="138" text-anchor="middle" font-size="9" fill="var(--muted)">${fD(new Date(+TODAY-(11-i)*7*DAY))}</text>`:''}`).join('')}</svg>
+  <p class="small">Últimos 7 dias: <b class="mono">${N(cur)} XP</b> · semana anterior: <b class="mono">${N(pr)} XP</b> <span style="color:${cur>=pr?'var(--ok)':'var(--danger)'}">(${cur>=pr?'+':''}${Math.round((cur/pr-1)*100)}%)</span></p>`}
+
+function wGhost(){const a=[],b=[];let s1=0,s2=0;for(let i=0;i<30;i++){s1+=heat[335+i].m;s2+=heat[305+i].m;a.push(s1);b.push(s2)}
+ const mx=Math.max(s1,s2),X=i=>20+i*(320/29),Y=v=>130-v/mx*110,P=z=>z.map((v,i)=>`${X(i)},${Y(v)}`).join(' ');
+ return`<svg viewBox="0 0 380 150" width="100%" role="img" aria-label="Minutos acumulados: últimos 30 dias contra os 30 anteriores"><line x1="20" x2="340" y1="130" y2="130" stroke="var(--border)"/><polygon points="20,130 ${P(a)} ${X(29)},130" fill="var(--accent)" fill-opacity=".18"/><polyline points="${P(b)}" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4"/><polyline points="${P(a)}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+  <text x="344" y="${Y(s1)+4}" font-size="10" fill="var(--accent)">${N(s1/60)} h</text><text x="344" y="${Y(s2)+(Math.abs(Y(s1)-Y(s2))<12?14:4)}" font-size="10" fill="var(--muted)">${N(s2/60)} h</text><text x="20" y="146" font-size="9" fill="var(--muted)">dia 1</text><text x="340" y="146" text-anchor="end" font-size="9" fill="var(--muted)">dia 30</text></svg>
+  <p class="small"><span style="color:var(--accent)">━</span> últimos 30 dias · <span class="muted">╌</span> 30 dias anteriores (seu "eu fantasma")<br>${s1>=s2?`Você está <b>${N((s1-s2)/60)} h à frente</b> do fantasma.`:`Você está <b>${N((s2-s1)/60)} h atrás</b> do fantasma.`}</p>`}
+
+function wHour(){const mx=Math.max(...HOURS),pk=HOURS.indexOf(mx);
+ return`<svg viewBox="0 0 360 120" width="100%" role="img" aria-label="Minutos de leitura por hora do dia">${HOURS.map((v,i)=>`<rect x="${i*15+2}" y="${90-v/mx*80}" width="11" height="${Math.max(1,v/mx*80)}" rx="2" fill="${i===pk?'var(--accent)':'var(--muted)'}" fill-opacity="${i===pk?1:.5}"/>${i%3===0?`<text x="${i*15+7}" y="108" text-anchor="middle" font-size="9" fill="var(--muted)">${i}h</text>`:''}`).join('')}</svg>
+  <p class="small">Hora de ouro: <b class="mono">${pk}h–${pk+1}h</b>. Um bônus "sessão na hora de ouro" (+10% XP) reforça o hábito que já funciona. Segundo pico: 6h–7h.</p>`}
+
+function wAch(){
+ const A=[['PB','Primeiro Boss','Terminar um livro com 600+ páginas',1,1],['7D','Sequência de 7','7 dias seguidos',Math.min(7,streak()),7],['30','Sequência de 30','30 dias seguidos',Math.min(30,streak()),30],['FC','Fechador','Terminar 3 livros sem abrir novos',1,3],['RM','Ramo completo','5/5 nós em uma área',Math.max(...AK.map(areaDone)),5],['PL','Polímata','1+ nó em todas as 6 áreas',AK.filter(a=>areaDone(a)>0).length,6],['RS','Ressurreição','Retomar livro parado há 60+ dias',books.some(b=>b.res)?1:0,1],['MD','Madrugador','20 sessões antes das 7h',13,20],['1K','Mil páginas','1.000 páginas lidas',1000,1000]];
+ return`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px 18px">${A.map(a=>{const ok=a[3]>=a[4];return`<div class="medal ${ok?'':'lock'}"><svg viewBox="0 0 44 44" width="44" height="44" aria-hidden="true"><polygon points="22,2 40,12 40,32 22,42 4,32 4,12" fill="${ok?'var(--accent)':'var(--surface2)'}" stroke="${ok?'var(--accent)':'var(--border)'}" stroke-width="2"/><text x="22" y="26" text-anchor="middle" font-size="12" font-weight="700" fill="${ok?'var(--on-accent)':'var(--muted)'}">${a[0]}</text></svg><div><div><b>${a[1]}</b> <span class="mono muted small">${ok?'conquistada':a[3]+'/'+a[4]}</span></div><div class="small muted">${a[2]}</div>${ok?'':bar(a[3]/a[4],'var(--muted)',5)}</div></div>`}).join('')}</div>`}
+
+/* ============ HERO + RENDER ============ */
+function hero(){const xp=totalXp(),L=levelOf(xp),a=lvlXp(L),b=lvlXp(L+1),p=pace(),cls=classScores()[0],f=B(state.focus);
+ return`<section class="hero" data-od-id="hero-character"><div class="badge"><svg viewBox="0 0 96 108" aria-hidden="true"><polygon points="48,3 92,28 92,80 48,105 4,80 4,28" fill="var(--surface2)" stroke="var(--accent)" stroke-width="3"/></svg><b>${L}</b><small>NÍVEL</small></div>
+ <div style="min-width:0"><div class="mono muted" style="font-size:12px;letter-spacing:.14em">LEITURAS · FICHA DO PERSONAGEM</div><h1>${titleOf(L)}</h1><p class="sub"><span class="chip">${cls.n}</span> &nbsp;classe atual, definida pelas áreas em que você mais avançou</p>
+ <div class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((xp-a)/(b-a)*100)}" aria-label="Progresso para o próximo nível"><i style="width:${(xp-a)/(b-a)*100}%"></i></div>
+ <div class="xpline"><span>${N(xp-a)} / ${N(b-a)} XP no nível ${L}</span><span>faltam ${N(b-xp)} XP para o nível ${L+1} · ≈ ${Math.ceil((b-xp)/p.xpd)} dias no ritmo atual</span></div>
+ <div class="stats"><div class="stat"><b>${N(xp)}</b><span>XP total</span></div><div class="stat"><b>${streak()}</b><span>dias seguidos</span></div><div class="stat"><b>${finishedYear().length}/8</b><span>livros no ano</span></div><div class="stat"><b>${NODES.filter(n=>nodeState(n)==='done').length}/30</b><span>nós da árvore</span></div><div class="stat"><b>${N(books.reduce((s,x)=>s+x.mins,0)/60)} h</b><span>lidas</span></div><div class="stat"><b>× ${mult().toFixed(2).replace('.',',')}</b><span>multiplicador</span></div></div></div>
+ <div class="cta"><button class="btn-primary" data-act="session" data-od-id="cta-session">Registrar sessão de 25 min</button><small>Simulação: soma 14 págs. a <b>${f?f.s:'—'}</b> e mostra XP, nós e nível subindo em tempo real.</small></div></section>`}
+
+function main(){WN=0;
+ const S=(id,t,d,body)=>body.trim()?`<section class="sec" id="${id}" data-od-id="${id}"><h2>${t}</h2><p>${d}</p><div class="grid">${body}</div></section>`:'';
+ const q=(s,x)=>s+x;
+ return S('sec-prog','1 · Progressão RPG','Nível, XP, árvore de habilidades por área, classe e as regras que ligam leitura a progresso.',
+  W('tree','Árvore de habilidades','Cada área da computação tem 5 nós; os tópicos dos livros lidos preenchem a árvore. Clique num nó.',12,wTree())+
+  W('radar','Radar de atributos','Seis áreas em um polígono: mostra de relance onde você é forte e onde há um buraco.',4,wRadar())+
+  W('classes','Classe do leitor','Sua classe muda conforme as duas áreas mais fortes; "Polímata" exige equilíbrio.',4,wClasses())+
+  W('levels','Marcos de nível','Recompensas futuras visíveis (do app e da vida real) dão motivo para subir o próximo nível.',4,wLevels())+
+  W('rules','Fontes e multiplicadores de XP','Regras claras de XP; os multiplicadores premiam foco, streak e conclusão, não só volume.',6,wRules())+
+  W('log','Diário de XP','Cada sessão vira uma linha com XP ganho, para o esforço aparecer imediatamente.',6,wLog()))+
+ S('sec-fim','2 · Terminar o que começo','Ideias contra a dor de abrir livros demais: limite, compromisso, chefes, reta final e cemitério.',
+  W('wip','Limite de livros ativos','Slots de leitura (aqui, 2). Passar do limite tira o bônus de foco e acende o alerta.',5,wWip())+
+  W('pact','Livro da semana','Escolha um livro como compromisso; ele recebe o XP e ganha data prevista de término.',7,wPact())+
+  W('boss','Chefes (livros grandes)','Livros de 550+ páginas viram chefes com barra de HP e fases; cada fase vencida dá XP.',7,wBoss())+
+  W('final','Reta final','Livros acima de 60% mostram o baú de conclusão: o último trecho vale o maior prêmio.',5,wFinal())+
+  W('forecast','Um por vez × todos juntos','Mostra quando cada livro termina nos dois modos: terminar em sequência chega antes.',7,wForecast())+
+  W('grave','Cemitério de livros','Livros pausados com dias de abandono, opção de ressuscitar com bônus ou aposentar sem culpa.',5,wGrave()))+
+ S('sec-sentir','3 · Sentir o aprendizado','Ideias contra a dor de não perceber progresso: trilhas, diário de conquistas, revisão e recordação ativa.',
+  W('quests','Trilhas e missões de ramo','Mostra o que ler para destravar o próximo nó de cada área, ordenado pelo menor esforço.',7,wQuests())+
+  W('diary','Diário de aprendizado','"O que você aprendeu" em lista datada: prova concreta de progresso nos últimos 90 dias.',5,wDiary())+
+  W('rust','Enferrujamento e revisão','Áreas sem leitura há 60+ dias perdem brilho; uma revisão rápida devolve XP.',6,wRust())+
+  W('quiz','Desafio relâmpago','Uma pergunta por dia sobre livros já lidos; recordação ativa fixa o conteúdo e rende XP.',6,wQuiz()))+
+ S('sec-habito','4 · Hábito e ritmo','Missões diárias, sequência, meta anual e comparações com você mesmo.',
+  W('daily','Missões diárias e semanal','Metas pequenas e concretas todo dia; a semanal amarra o livro da semana.',4,wDaily())+
+  W('streak','Sequência e escudo','Dias seguidos com marcos de recompensa; o escudo perdoa 1 falha para não desanimar.',4,wStreak())+
+  W('goal','Meta anual','Meta de livros com marcador do ritmo esperado; deixa visível quando você está atrás.',4,wGoal())+
+  W('heat','Mapa de calor 365 dias','Cada quadrado é um dia; a grade preenchida é a prova visual do hábito.',12,wHeat())+
+  W('weekly','XP por semana','Barras de 12 semanas mostram a tendência de esforço, com a semana atual em destaque.',6,wWeekly())+
+  W('ghost','Corrida contra o eu fantasma','Compara os últimos 30 dias com os 30 anteriores: o rival é você mesmo.',6,wGhost())+
+  W('hour','Hora de ouro','Mostra em que horário você mais lê e sugere reforçar esse horário com bônus.',6,wHour())+
+  W('ach','Conquistas','Medalhas com meta e progresso; algumas premiam fechar livros, não só ler muito.',6,wAch()))}
+
+function render(){
+ document.getElementById('hero').innerHTML=hero();
+ document.getElementById('main').innerHTML=main();
+ const vis=document.querySelectorAll('#main .w').length;
+ document.getElementById('count').textContent=`${vis} de ${WN} ideias visíveis · ${state.keep.size} marcadas`;
+ const fk=document.getElementById('fk');fk.setAttribute('aria-pressed',state.onlyKeep);
+}
+
+/* ============ AÇÕES ============ */
+function snap(){return{lvl:levelOf(totalXp()),done:new Set(NODES.filter(n=>nodeState(n)==='done').map(n=>n.id))}}
+function diffToast(a,b,extra=[]){const m=[...extra];NODES.forEach(n=>{if(b.done.has(n.id)&&!a.done.has(n.id))m.push(`Nó desbloqueado: <b>${n.n}</b> +${NODE_XP} XP`)});if(b.lvl>a.lvl)m.push(`<b>NÍVEL ${b.lvl}!</b> ${titleOf(b.lvl)}`);if(m.length)toast(m.join('<br>'))}
+function award(k,xp,label){if(state.awarded.has(k))return null;state.awarded.add(k);state.bonus+=xp;return`Missão: ${label} +${xp} XP`}
+function dailies(){const m=[];
+ if(state.todayMin>=25)m.push(award('min',30,'25 minutos'));if(state.todayPages>=10)m.push(award('pg',30,'10 páginas'));if(state.note)m.push(award('note',20,'anotar ideia'));if(state.quizOk)m.push(award('quiz',20,'desafio relâmpago'));
+ return m.filter(Boolean)}
+function act(el){const a=el.dataset.act,id=el.dataset.id;
+ if(a==='keep'){state.keep.has(id)?state.keep.delete(id):state.keep.add(id);saveUi();return render()}
+ if(a==='hide'){state.hidden.add(id);saveUi();return render()}
+ if(a==='restore'){state.hidden.clear();saveUi();return render()}
+ if(a==='filterKeep'){state.onlyKeep=!state.onlyKeep;return render()}
+ if(a==='node'){state.sel=el.dataset.n;return render()}
+ if(a==='focus'){state.focus=id;return render()}
+ if(a==='pause'){const b=B(id);b.st='pausado';if(state.focus===id){const r=reading()[0];state.focus=r?r.id:null}return render()}
+ if(a==='resume'){const b=B(id),s=snap();b.st='lendo';b.res=dd(TODAY,b.last)>=60;b.pr=Math.min(100,b.pr+20/b.p*100);b.mins+=40;b.last=TODAY;state.bonus+=50;state.focus=id;diffToast(s,snap(),[`Ressuscitado: <b>${b.s}</b> +50 XP`]);return render()}
+ if(a==='retire'){B(id).st='aposentado';return render()}
+ if(a==='review'){const s=snap();state.reviewed[id]=TODAY;state.bonus+=60;diffToast(s,snap(),[`Revisão de ${AREAS[id].n} +60 XP`]);return render()}
+ if(a==='note'){state.note=el.checked;const s=snap(),m=dailies();diffToast(s,snap(),m);return render()}
+ if(a==='quiz'){const k=state.quiz,q=QUIZ[k.i%QUIZ.length],s=snap();k.pick=+el.dataset.o;const m=[];if(k.pick===q.c){if(!k.got.has(k.i)){k.got.add(k.i);state.bonus+=40;m.push('Resposta certa +40 XP')}state.quizOk=true;m.push(...dailies())}diffToast(s,snap(),m);return render()}
+ if(a==='quizNext'){state.quiz.i++;state.quiz.pick=null;return render()}
+ if(a==='session'){const b=B(state.focus)||reading()[0];if(!b)return toast('Nenhum livro ativo para registrar a sessão.');
+  const s=snap(),pg=14,mn=25,m=mult(),xp=Math.round((pg*10+mn)*m),ex=[];
+  b.pr=Math.min(100,b.pr+pg/b.p*100);b.mins+=mn;b.last=TODAY;state.bonus+=xp-(pg*10+mn);state.todayMin+=mn;state.todayPages+=pg;
+  state.log.unshift({w:'Agora',l:`${b.s} · ${pg} pág. · ${mn} min`,xp,m});ex.push(`Sessão em <b>${b.s}</b> +${xp} XP`);
+  if(b.pr>=99.9){b.pr=100;b.st='lido';b.fin=TODAY;state.bonus+=0;ex.push(`<b>Chefe derrotado!</b> ${b.s} concluído: baú +${N(300+2*b.p)} XP`);const r=reading()[0];state.focus=r?r.id:null}
+  ex.push(...dailies());diffToast(s,snap(),ex);return render()}
+}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(el&&!(el.tagName==='INPUT'&&el.dataset.act!=='note'))act(el)});
+document.addEventListener('change',e=>{if(e.target.matches('input[data-act=note]'))act(e.target)});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('g[data-act]')){e.preventDefault();act(e.target)}});
+render();
+</script>
+</body>
+</html>

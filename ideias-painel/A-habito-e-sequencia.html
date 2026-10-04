@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leituras · Hábito e sequência — banco de ideias</title>
+<style>
+:root{
+  --bg:oklch(0.17 0.01 260);--surface:oklch(0.215 0.012 260);--surface2:oklch(0.265 0.014 260);
+  --fg:oklch(0.95 0.005 260);--muted:oklch(0.74 0.012 260);--border:oklch(0.33 0.014 260);
+  --accent:oklch(0.8 0.17 150);--accent-ink:oklch(0.2 0.04 150);
+  --g1:oklch(0.38 0.07 150);--g2:oklch(0.55 0.12 150);--g3:oklch(0.72 0.16 150);--g4:oklch(0.86 0.19 150);
+  --warn:oklch(0.82 0.15 78);--danger:oklch(0.72 0.17 25);
+  --mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--g4);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1360px;margin:0 auto;padding:0 24px 80px}
+header.top{padding:36px 0 20px;display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:flex-end}
+.eyebrow{font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 34px/1.1 var(--mono);margin:8px 0 8px;letter-spacing:-.02em}
+.lede{color:var(--muted);max-width:62ch;margin:0}
+.tally{display:flex;gap:10px;flex-wrap:wrap}
+.tally div{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:96px}
+.tally b{display:block;font:700 22px var(--mono)}
+.tally span{font-size:12px;color:var(--muted)}
+.bar{position:sticky;top:0;z-index:20;background:oklch(0.17 0.01 260 / .92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);margin:0 -24px;padding:10px 24px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar .sp{flex:1}
+.chip,.btn{min-height:36px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px;white-space:nowrap;transition:background .15s,border-color .15s}
+.chip:hover,.btn:hover{background:var(--surface2);border-color:oklch(0.45 0.014 260)}
+.chip[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.primary:hover{background:var(--g4);border-color:var(--g4);color:var(--accent-ink)}
+.btn.sm{min-height:32px;padding:4px 10px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.danger:hover{border-color:var(--danger)}
+section.sec{margin-top:44px}
+section.sec>h2{font:700 13px var(--mono);letter-spacing:.1em;text-transform:uppercase;margin:0 0 4px;color:var(--fg)}
+section.sec>p{margin:0 0 16px;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;grid-auto-flow:dense}
+.s3{grid-column:span 3}.s4{grid-column:span 4}.s5{grid-column:span 5}.s6{grid-column:span 6}.s7{grid-column:span 7}.s8{grid-column:span 8}.s12{grid-column:span 12}
+.w{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.w[data-mark=keep]{border-color:var(--g2)}
+.w[data-mark=drop]{opacity:.5}
+.w[hidden]{display:none}
+.wh{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.wh h3{margin:0;font:600 15px/1.25 var(--sans)}
+.idea{margin:3px 0 0;font:12px/1.4 var(--mono);color:var(--muted)}
+.pains{display:flex;gap:6px;flex-wrap:wrap}
+.pain{font:600 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;border:1px solid var(--border);color:var(--muted)}
+.pain.p1{border-color:var(--g2);color:var(--g4)}.pain.p2{border-color:oklch(0.6 0.12 78);color:var(--warn)}
+.mk{display:flex;gap:4px;flex:none}
+.mk button{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;display:grid;place-items:center;color:var(--muted)}
+.mk button:hover{background:var(--surface2);color:var(--fg)}
+.mk button[aria-pressed=true].k{background:var(--g1);border-color:var(--g2);color:var(--fg)}
+.mk button[aria-pressed=true].d{background:var(--surface2);border-color:var(--danger);color:var(--fg)}
+.wb{display:flex;flex-direction:column;gap:10px;flex:1}
+.num{font:700 44px/1 var(--mono);letter-spacing:-.03em}
+.num small{font:500 14px var(--sans);color:var(--muted);letter-spacing:0;margin-left:6px}
+.sub{color:var(--muted);font-size:13px}
+.sub b,.hl{color:var(--fg)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.mono{font-family:var(--mono)}
+.track{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.track i{display:block;height:100%;background:var(--g3);border-radius:99px}
+.track.warn i{background:var(--warn)}
+.alert{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);font-size:13px}
+.alert.warn{border-color:oklch(0.6 0.12 78)}.alert.ok{border-color:var(--g2)}.alert.bad{border-color:var(--danger)}
+.alert b{color:var(--fg)}
+.lbl{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+svg text{font-family:var(--mono);fill:var(--muted);font-size:10px}
+.dots{display:flex;gap:6px}
+.dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:600 11px var(--mono);border:1.5px solid var(--border);color:var(--muted)}
+.dot.on{background:var(--g3);border-color:var(--g3);color:var(--accent-ink)}
+.dot.today{border-style:dashed;border-color:var(--fg);color:var(--fg)}
+.dot.sh{border-color:var(--warn);color:var(--warn)}
+.links{display:grid;grid-template-columns:repeat(15,1fr);gap:4px}
+.lk{aspect-ratio:1;border-radius:5px;border:1.5px solid oklch(0.45 0.1 25);background:transparent}
+.lk.on{background:var(--g3);border-color:var(--g3)}.lk.sh{background:var(--warn);border-color:var(--warn)}
+.lk.today{border:1.5px dashed var(--fg)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:7px 6px;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}
+th{font:600 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+td.r,th.r{text-align:right}
+.cover{width:64px;aspect-ratio:2/3;border-radius:5px;flex:none;padding:6px;display:flex;flex-direction:column;justify-content:space-between;font:700 9px/1.15 var(--mono);color:oklch(0.97 0.01 260);position:relative;box-shadow:0 2px 8px #0006}
+.cover.lg{width:96px;font-size:11px;padding:8px}
+.cover em{font-style:normal;font-weight:500;opacity:.8;font-size:8px}
+.cover.lg em{font-size:9px}
+.bk{display:flex;gap:12px;align-items:center}
+.bk .meta{min-width:0;flex:1}
+.bk .t{font-weight:600;line-height:1.3}
+select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;min-height:36px}
+input[type=range]{width:100%;accent-color:oklch(0.72 0.16 150)}
+input[type=checkbox]{width:18px;height:18px;accent-color:oklch(0.72 0.16 150);flex:none}
+label.chk{display:flex;gap:10px;align-items:flex-start;padding:6px 0;cursor:pointer}
+.plan{display:grid;grid-template-columns:64px repeat(7,1fr);gap:4px;align-items:center}
+.plan button{height:34px;border-radius:7px;border:1px solid var(--border);background:transparent;cursor:pointer}
+.plan button:hover{background:var(--surface2)}
+.plan button[aria-pressed=true]{background:var(--g2);border-color:var(--g3)}
+.plan span{font:600 11px var(--mono);color:var(--muted);text-align:center}
+.plan span.l{text-align:left}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.badge{border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:4px}
+.badge.on{border-color:var(--g2);background:oklch(0.25 0.04 150)}
+.badge .ic{width:28px;height:28px;border-radius:8px;background:var(--surface2);display:grid;place-items:center;color:var(--muted)}
+.badge.on .ic{background:var(--g3);color:var(--accent-ink)}
+.badge b{font-size:13px}.badge span{font-size:12px;color:var(--muted)}
+.lock{opacity:.6}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;z-index:50;box-shadow:0 8px 30px #0008}
+#export{margin-top:16px;display:none}
+#export textarea{width:100%;min-height:200px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--fg);padding:12px;font:12px/1.5 var(--mono)}
+.legend{display:flex;gap:6px;align-items:center;font:11px var(--mono);color:var(--muted)}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+@media(max-width:1100px){.s3,.s4,.s5,.s7{grid-column:span 6}.s8{grid-column:span 12}}
+@media(max-width:700px){.wrap{padding:0 14px 60px}.bar{margin:0 -14px;padding:10px 14px}.grid>*{grid-column:span 12!important}h1{font-size:26px}.plan{grid-template-columns:48px repeat(7,1fr)}}
+@media(pointer:coarse){.chip,.btn{min-height:44px}.mk button{width:44px;height:44px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top" data-od-id="page-header">
+  <div>
+    <div class="eyebrow">Leituras · v0 · hábito e consistência</div>
+    <h1>Banco de ideias do painel</h1>
+    <p class="lede">Cada bloco é uma ideia isolada, com um rótulo curto dizendo o que ela faz. Marque <b>manter</b> ou <b>descartar</b> em cada um; no fim, exporte a lista. Os dados são fictícios.</p>
+  </div>
+  <div class="tally" data-od-id="tally"></div>
+</header>
+
+<nav class="bar" data-od-id="toolbar" aria-label="Filtros">
+  <button class="chip" data-filter="all" aria-pressed="true">Todos</button>
+  <button class="chip" data-filter="keep" aria-pressed="false">Mantidos</button>
+  <button class="chip" data-filter="drop" aria-pressed="false">Descartados</button>
+  <button class="chip" data-filter="open" aria-pressed="false">Sem decisão</button>
+  <button class="chip" data-filter="p1" aria-pressed="false">Dor: sem progresso</button>
+  <button class="chip" data-filter="p2" aria-pressed="false">Dor: não termino</button>
+  <span class="sp"></span>
+  <button class="btn" id="btn-export">Exportar escolhas</button>
+  <button class="btn" id="btn-reset">Limpar marcas</button>
+</nav>
+<div id="export"><textarea id="export-text" readonly aria-label="Lista exportada"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="btn-copy">Copiar</button></div></div>
+
+<main id="main"></main>
+</div>
+<div id="toast-host"></div>
+
+<script>
+/* ============ DADOS FICTÍCIOS ============ */
+const N=365, TODAY=new Date(2026,9,4);
+const dateOf=i=>new Date(2026,9,4-(N-1-i));
+const dow=i=>(dateOf(i).getDay()+6)%7;           // 0 = segunda
+const DOW=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const idxOf=(m,d)=>N-1-Math.round((TODAY-new Date(2026,m,d))/864e5);
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(42);
+const mins=[],ppm=[],sessions=[];
+for(let i=0;i<N;i++){
+  const base=[.7,.72,.68,.7,.6,.5,.42][dow(i)]+i/N*.12;
+  let m=R()<base?Math.min(150,Math.round(8-Math.log(1-R())*28)):0;
+  if(i>=120&&i<=133)m=0;
+  if(i>=223&&i<=263)m=Math.max(m,25+Math.floor(R()*35));
+  if(i===222||i===264||i===340)m=0;
+  if(i>=341&&i<=363)m=Math.max(m,25+Math.floor(R()*35));
+  if(i===364)m=14;
+  mins.push(m);ppm.push(.34+i/N*.2+R()*.04);
+}
+const hw=[1.2,.2,.1,.1,.2,.5,2,3,1.5,.5,.3,.3,1,.7,.3,.3,.4,.6,1,1.5,3,5,5,3];
+const hsum=hw.reduce((a,b)=>a+b);
+function pickHour(){let r=R()*hsum;for(let h=0;h<24;h++){r-=hw[h];if(r<=0)return h}return 21}
+for(let i=0;i<N;i++){if(!mins[i])continue;const k=mins[i]>45?2:1;let left=mins[i];for(let s=0;s<k;s++){const m=s===k-1?left:Math.round(left*(.4+R()*.2));left-=m;if(m>0)sessions.push({i,h:pickHour(),m})}}
+const pages=mins.map((m,i)=>Math.round(m*ppm[i]));
+
+const BOOKS=[
+ {id:'ddia',t:'Designing Data-Intensive Applications',a:'Martin Kleppmann',p:614,pct:58,st:'lendo',topic:'Dados',min:1210,last:0,hue:250,ch:'Cap. 7 · Transações',pg:356,start:'17 jul'},
+ {id:'ci',t:'Crafting Interpreters',a:'Robert Nystrom',p:640,pct:71,st:'pausado',topic:'Linguagens',min:1480,last:21,hue:30,ch:'Cap. 22 · Variáveis locais',pg:454,start:'03 mai'},
+ {id:'sicp',t:'Structure and Interpretation of Computer Programs',a:'Abelson, Sussman',p:657,pct:22,st:'pausado',topic:'Algoritmos',min:520,last:61,hue:20,ch:'Cap. 2 · Dados hierárquicos',pg:145,start:'12 jan'},
+ {id:'clrs',t:'Introduction to Algorithms (CLRS)',a:'Cormen, Leiserson, Rivest, Stein',p:1312,pct:9,st:'lendo',topic:'Algoritmos',min:410,last:12,hue:200,ch:'Cap. 4 · Divisão e conquista',pg:118,start:'02 set'},
+ {id:'dbi',t:'Database Internals',a:'Alex Petrov',p:370,pct:34,st:'pausado',topic:'Dados',min:380,last:38,hue:160,ch:'Cap. 4 · Implementando B-Trees',pg:126,start:'20 jun'},
+ {id:'ostep',t:'Operating Systems: Three Easy Pieces',a:'Arpaci-Dusseau',p:690,pct:100,st:'lido',topic:'Sistemas',min:1620,last:46,hue:120,end:'19 ago',endIdx:idxOf(7,19)},
+ {id:'net',t:'Computer Networking: A Top-Down Approach',a:'Kurose, Ross',p:800,pct:100,st:'lido',topic:'Redes',min:1900,last:96,hue:330,end:'30 jun',endIdx:idxOf(5,30)},
+ {id:'code',t:'Code: The Hidden Language',a:'Charles Petzold',p:400,pct:100,st:'lido',topic:'Fundamentos',min:840,last:165,hue:290,end:'22 abr',endIdx:idxOf(3,22)},
+ {id:'pp',t:'The Pragmatic Programmer',a:'Hunt, Thomas',p:352,pct:100,st:'lido',topic:'Prática',min:700,last:235,hue:60,end:'11 fev',endIdx:idxOf(1,11)},
+];
+const bk=id=>BOOKS.find(b=>b.id===id);
+const SHORT={ddia:'DDIA',sicp:'SICP',clrs:'CLRS',ci:'Crafting Interpreters',dbi:'Database Internals',ostep:'OSTEP',net:'Computer Networking',code:'Code',pp:'The Pragmatic Programmer'};
+const sh=b=>SHORT[b.id];
+const FINISH_BY_MONTH=[0,1,0,1,0,1,0,1,0,0,0,0]; // jan..dez 2026 (um por mês; out em andamento)
+FINISH_BY_MONTH[1]=1;FINISH_BY_MONTH[3]=1;FINISH_BY_MONTH[5]=1;FINISH_BY_MONTH[7]=1;
+const YEAR_GOAL=8;
+
+/* ============ ESTADO ============ */
+const KEY='leituras-habito-v1';
+const S=Object.assign({goal:20,marks:{},filter:'all',shield:[],quests:[],plan:['0-2','1-2','2-2','3-2','4-2','5-0','6-0'],
+  cue:{when:'Depois do café da manhã',mins:'10 min',where:'na mesa, com o Kindle'},focus:'ddia',decide:{},pace:20,cps:['0','1'],wip:1},
+  JSON.parse(localStorage.getItem(KEY)||'{}'));
+const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
+
+/* ============ HELPERS ============ */
+const sum=(a)=>a.reduce((x,y)=>x+y,0);
+const hm=m=>m<60?`${Math.round(m)} min`:`${Math.floor(m/60)}h${String(Math.round(m%60)).padStart(2,'0')}`;
+const fd=(d)=>d.toLocaleDateString('pt-BR',{day:'numeric',month:'short'}).replace('.','');
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const hit=(i,th=S.goal)=>mins[i]>=th||S.shield.includes(i);
+function streakAt(th){let i=N-1;if(!hit(i,th))i--;let c=0;while(i>=0&&hit(i,th)){c++;i--}return c}
+function runs(th){const r=[];let c=0;for(let i=0;i<N;i++){if(hit(i,th))c++;else{if(c)r.push({len:c,end:i-1});c=0}}if(c)r.push({len:c,end:N-1});return r}
+function flexStreak(){let i=hit(N-1)?N-1:N-2,len=0,miss=0;while(i>=0){if(hit(i)){miss=0}else{miss++;if(miss===2)break}i--;len++}return len-(miss>0?1:0)}
+const curStreak=()=>streakAt(S.goal),bestStreak=()=>Math.max(...runs(S.goal).map(r=>r.len));
+const ppmRecent=()=>sum(pages.slice(-30))/Math.max(1,sum(mins.slice(-30)));
+const week=(k)=>{const s=N-1-dow(N-1)-7*k;return Array.from({length:7},(_,j)=>s+j<N?mins[s+j]:0)};
+const hours90=()=>{const h=Array(24).fill(0);sessions.filter(s=>s.i>=N-90).forEach(s=>h[s.h]+=s.m);return h};
+const bookPages=b=>Math.round(b.p*b.pct/100);
+const open=()=>BOOKS.filter(b=>b.st!=='lido');
+const icon={
+ ok:'<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>',
+ x:'<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
+ shield:(c='currentColor',f='none')=>`<svg width="26" height="26" viewBox="0 0 24 24" fill="${f}" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l7 3v5.5c0 4.2-2.9 7.6-7 9.5-4.1-1.9-7-5.3-7-9.5V6z"/></svg>`,
+ star:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'
+};
+function ring(p,size=140,sw=12){const r=(size-sw)/2,c=2*Math.PI*r;return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${Math.round(p*100)}%"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--surface2)" stroke-width="${sw}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--g3)" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${c*Math.min(1,p)} ${c}" transform="rotate(-90 ${size/2} ${size/2})"/></svg>`}
+function bars(vals,{h=110,labels=[],hi=[],unit='',w=300}={}){const mx=Math.max(...vals,1),bw=w/vals.length;
+  return `<svg viewBox="0 0 ${w} ${h+16}" width="100%" role="img">${vals.map((v,i)=>{const bh=v/mx*h;return `<rect x="${i*bw+bw*.12}" y="${h-bh}" width="${bw*.76}" height="${bh}" rx="3" fill="${hi.includes(i)?'var(--g4)':'var(--g2)'}"><title>${labels[i]??i}: ${Math.round(v)}${unit}</title></rect>${labels[i]!==undefined&&(vals.length<=12||i%3===0)?`<text x="${i*bw+bw/2}" y="${h+12}" text-anchor="middle">${labels[i]}</text>`:''}`}).join('')}</svg>`}
+function spark(vals,w=300,h=60){const mx=Math.max(...vals),mn=Math.min(...vals),rg=mx-mn||1;const pts=vals.map((v,i)=>`${(i/(vals.length-1)*w).toFixed(1)},${(h-4-(v-mn)/rg*(h-8)).toFixed(1)}`);
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img"><polygon points="0,${h} ${pts.join(' ')} ${w},${h}" fill="var(--g1)" opacity=".6"/><polyline points="${pts.join(' ')}" fill="none" stroke="var(--g3)" stroke-width="2" stroke-linejoin="round"/></svg>`}
+const cover=(b,lg)=>`<div class="cover${lg?' lg':''}" style="background:oklch(0.42 0.1 ${b.hue})" role="img" aria-label="Capa provisória de ${b.t}"><span>${sh(b)}</span><em>${b.a.split(',')[0]}<br>capa provisória</em></div>`;
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2200)}
+const tierColor=(m)=>m<=0?'var(--surface2)':m<S.goal/2?'var(--g1)':m<S.goal?'var(--g2)':m<S.goal*2?'var(--g3)':'var(--g4)';
+
+/* ============ WIDGETS ============ */
+const W=[];
+const add=(sec,id,title,idea,pains,span,body)=>W.push({sec,id,title,idea,pains,span,body});
+
+/* ---- HOJE ---- */
+add('hoje','continue','Continue de onde parou','Um único botão que remove a fricção de começar: abre o livro em foco na página exata.',['p2'],'s4',()=>{
+  const b=bk(S.focus),left=Math.max(0,S.goal-mins[N-1]);
+  return `<div class="bk">${cover(b,true)}<div class="meta"><div class="lbl">Em foco</div><div class="t">${b.t}</div><div class="sub">${b.ch}<br>p. ${b.pg} de ${b.p}</div></div></div>
+  <div class="sub">${left?`Faltam <b>${left} min</b> para bater a meta de hoje.`:'Meta de hoje batida. Tudo a mais é bônus.'}</div>
+  <button class="btn primary" data-act="open-book" style="min-height:44px">Abrir na página ${b.pg}</button>`});
+add('hoje','goal-ring','Meta diária','Anel de progresso do dia em minutos, com equivalente em páginas; a meta é ajustável.',['p1'],'s4',()=>{
+  const m=mins[N-1],pg=pages[N-1],tp=Math.round(S.goal*ppmRecent());
+  return `<div class="row" style="gap:18px;flex-wrap:nowrap"><div style="position:relative;flex:none">${ring(m/S.goal,128)}<div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center"><div><div class="mono" style="font-size:26px;font-weight:700">${m}</div><div class="sub" style="font-size:11px">de ${S.goal} min</div></div></div></div>
+  <div><div class="num" style="font-size:30px">${pg}<small>de ~${tp} págs</small></div><div class="sub" style="margin-top:6px">Ritmo recente: ${(ppmRecent()*60).toFixed(0)} págs/h</div></div></div>
+  <div class="row">${[10,20,30,45,60].map(g=>`<button class="chip" data-act="goal" data-v="${g}" aria-pressed="${g===S.goal}">${g} min</button>`).join('')}</div>`});
+add('hoje','risk','Alerta de risco da corrente','Avisa quando a corrente está em perigo, com base na hora em que você costuma ler.',['p2'],'s4',()=>{
+  const now=new Date(),left=(24-now.getHours()-now.getMinutes()/60),need=Math.max(0,S.goal-mins[N-1]),h=hours90(),peak=h.indexOf(Math.max(...h));
+  if(hit(N-1))return `<div class="alert ok"><b>Sem risco.</b> Hoje já conta para a corrente de ${curStreak()} dias.</div><div class="sub">Seu pico de leitura costuma ser perto das ${peak}h.</div>`;
+  return `<div class="alert ${left<3?'bad':'warn'}"><b>Corrente de ${curStreak()} dias em risco.</b> Faltam ${need} min e restam ${Math.floor(left)}h${String(Math.round(left%1*60)).padStart(2,'0')} até meia-noite.</div>
+  <div class="sub">Você costuma ler por volta das <b>${peak}h</b>. ${S.shield.includes(N-1)?'Hoje está protegido por um escudo.':'Se não der, use um escudo.'}</div>`});
+add('hoje','quests','Missões do dia','Três microtarefas que valorizam o aprendizado, não só o tempo na página; cada uma dá XP.',['p1'],'s4',()=>{
+  const Q=[['Ler 10 min antes de abrir qualquer rede social',15],['Terminar a seção atual (7.2)',25],['Anotar 1 coisa que aprendi, em uma frase',20]];
+  const xp=sum(Q.filter((_,i)=>S.quests.includes(i)).map(q=>q[1]));
+  return Q.map((q,i)=>`<label class="chk"><input type="checkbox" data-act="quest" data-v="${i}" ${S.quests.includes(i)?'checked':''}><span style="flex:1">${q[0]}</span><span class="mono sub">+${q[1]} XP</span></label>`).join('')+`<div class="row between"><span class="sub">${S.quests.length}/3 feitas</span><span class="mono hl">+${xp} XP hoje</span></div>`});
+add('hoje','shield','Escudos de corrente','Proteção contra um dia ruim: gaste um escudo para manter a corrente. Ganha-se 1 a cada 7 dias seguidos.',['p2'],'s4',()=>{
+  const av=3-S.shield.length,prot=S.shield.includes(N-1);
+  return `<div class="row">${[0,1,2].map(i=>`<span title="${i<av?'Disponível':'Usado'}">${icon.shield(i<av?'var(--warn)':'var(--border)',i<av?'oklch(0.82 0.15 78 / .2)':'none')}</span>`).join('')}<span class="sub">${av} de 3 disponíveis</span></div>
+  <div class="row"><button class="btn" data-act="shield" ${hit(N-1)&&!prot?'disabled':''}>${prot?'Remover proteção de hoje':'Proteger hoje'}</button></div>
+  <div class="sub">Regras: máx. 3 escudos; um por dia; não vale se o dia já bateu a meta. Próximo escudo em ${7-(curStreak()%7)} dias.</div>`});
+
+/* ---- CORRENTE ---- */
+add('corrente','streak','Sequência atual','O número grande de dias seguidos batendo a meta, com o recorde ao lado como alvo.',['p2'],'s4',()=>{
+  const c=curStreak(),b=bestStreak();
+  return `<div class="num">${c}<small>dias seguidos</small></div><div class="track"><i style="width:${Math.min(100,c/b*100)}%"></i></div>
+  <div class="sub">Recorde: <b>${b} dias</b>${c>=b?' — você está no recorde!':` · faltam ${b-c+1} para superar`}</div>
+  <div class="dots">${Array.from({length:7},(_,j)=>{const i=N-7+j,t=i===N-1;return `<div class="dot ${hit(i)?'on':''} ${t&&!hit(i)?'today':''} ${S.shield.includes(i)&&!(mins[i]>=S.goal)?'sh':''}" title="${fd(dateOf(i))}: ${mins[i]} min">${DOW[dow(i)][0]}</div>`}).join('')}</div>`});
+add('corrente','chain30','Não quebre a corrente','Visual de elos dos últimos 30 dias: o objetivo vira não deixar um buraco na fila.',['p2'],'s4',()=>{
+  let h='';for(let i=N-30;i<N;i++){const t=i===N-1&&!hit(i),s=S.shield.includes(i)&&mins[i]<S.goal;h+=`<div class="lk ${hit(i)?(s?'sh':'on'):''} ${t?'today':''}" title="${fd(dateOf(i))}: ${mins[i]} min"></div>`}
+  const c=Array.from({length:30},(_,k)=>hit(N-30+k)).filter(Boolean).length;
+  return `<div class="links">${h}</div><div class="row between"><span class="sub"><b>${c}/30</b> dias com meta</span><span class="legend"><i style="background:var(--g3)"></i>meta <i style="background:var(--warn)"></i>escudo <i style="border:1.5px solid oklch(0.45 0.1 25)"></i>falha</span></div>`});
+add('corrente','levels','Corrente em 3 níveis','Três correntes paralelas (mínimo, meta, desafio): um dia fraco ainda alimenta a de bronze.',['p2'],'s4',()=>{
+  const L=[['Bronze',5],['Prata',S.goal],['Ouro',S.goal*2]];const mx=Math.max(...L.map(l=>streakAt(l[1])),1);
+  return L.map(([n,th])=>{const c=streakAt(th);return `<div><div class="row between"><span><b>${n}</b> <span class="sub">≥ ${th} min</span></span><span class="mono">${c} d</span></div><div class="track"><i style="width:${c/mx*100}%"></i></div></div>`}).join('')+`<div class="sub">Dica: nos dias ruins, o objetivo é só o bronze (5 min).</div>`});
+add('corrente','two-day','Regra dos 2 dias','Errar um dia é humano, dois seguidos viram hábito de parar. Mostra a corrente flexível.',['p2'],'s4',()=>{
+  const y=hit(N-2),t=hit(N-1);const msg=t?['ok','Hoje feito. Margem de 1 falha preservada.']:!y?['bad','<b>Ontem falhou.</b> Hoje é obrigatório: uma segunda falha seguida quebra a corrente flexível.']:['warn','<b>Ontem foi ok.</b> Se hoje falhar, é só um tropeço: amanhã é obrigatório.'];
+  return `<div class="alert ${msg[0]}">${msg[1]}</div><div class="row between"><span class="sub">Corrente estrita</span><span class="mono">${curStreak()} d</span></div><div class="row between"><span class="sub">Corrente flexível (tolera 1 falha isolada)</span><span class="mono">${flexStreak()} d</span></div>`});
+add('corrente','history','Histórico de correntes','Lista das últimas sequências: transforma o recorde em um alvo concreto a superar.',['p2'],'s4',()=>{
+  const r=runs(S.goal).filter(x=>x.len>=3).slice(-7),mx=Math.max(...r.map(x=>x.len)),b=bestStreak();
+  return r.map(x=>`<div class="row" style="flex-wrap:nowrap"><span class="mono sub" style="width:56px">${fd(dateOf(x.end))}</span><div class="track" style="flex:1"><i style="width:${x.len/mx*100}%;${x.end===N-1?'background:var(--g4)':''}"></i></div><span class="mono" style="width:46px;text-align:right">${x.len} d${x.len===b?' ★':''}</span></div>`).join('')+`<div class="sub">Barra clara = corrente em andamento. ★ = recorde.</div>`});
+add('corrente','month','Desafio do mês','Um objetivo mensal fechado (ex.: 20 dias com meta) que dá começo, meio e fim ao hábito.',['p2'],'s4',()=>{
+  const m=Array.from({length:4},(_,k)=>hit(N-4+k)).filter(Boolean).length,T=20,left=T-m,dleft=27;
+  return `<div class="num">${m}<small>de ${T} dias · outubro</small></div><div class="track"><i style="width:${m/T*100}%"></i></div><div class="sub">Faltam <b>${left} dias com meta</b> nos ${dleft} restantes: pode falhar ${dleft-left} vezes.</div><div class="sub">Recompensa: selo “Outubro constante”.</div>`});
+add('corrente','consistency','Pontuação de consistência','Uma nota única (% de dias com meta) em 30/90/365 dias, mais as últimas 12 semanas.',['p2'],'s4',()=>{
+  const f=n=>pct(Array.from({length:n},(_,k)=>hit(N-n+k)).filter(Boolean).length,n);
+  const wk=Array.from({length:12},(_,k)=>{const s=N-84+k*7;return Array.from({length:7},(_,j)=>hit(s+j)).filter(Boolean).length});
+  return `<div class="row" style="gap:20px">${[30,90,365].map(n=>`<div><div class="num" style="font-size:30px">${f(n)}%</div><div class="sub">${n} dias</div></div>`).join('')}</div>${bars(wk,{h:50,labels:wk.map((_,k)=>'S'+(k+1)),unit:' dias'})}<div class="sub">Dias com meta por semana, 12 semanas.</div>`});
+
+/* ---- PADRÕES ---- */
+add('padroes','heatmap','Heatmap motivacional','365 dias em cores relativas à meta: dá para ver buracos e fases boas de relance.',['p1','p2'],'s12',()=>{
+  const cw=14,off=dow(0),cols=Math.ceil((N+off)/7);let g='',mo='',last=-1;
+  for(let i=0;i<N;i++){const c=Math.floor((i+off)/7),r=(i+off)%7,d=dateOf(i);
+    g+=`<rect x="${28+c*cw}" y="${16+r*cw}" width="11" height="11" rx="2.5" fill="${tierColor(mins[i])}" ${S.shield.includes(i)?'stroke="var(--warn)" stroke-width="1.5"':''}><title>${fd(d)}: ${mins[i]} min · ${pages[i]} págs</title></rect>`;
+    if(d.getMonth()!==last&&d.getDate()<8){last=d.getMonth();mo+=`<text x="${28+c*cw}" y="10">${d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</text>`}}
+  const lab=['Seg','Qua','Sex'].map((t,k)=>`<text x="0" y="${16+k*2*cw+9}">${t}</text>`).join('');
+  const tot=sum(mins),act=mins.filter(m=>m>=S.goal).length;
+  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${28+cols*cw} ${16+7*cw}" style="min-width:760px;width:100%" role="img" aria-label="Heatmap de leitura dos últimos 365 dias">${mo}${lab}${g}</svg></div>
+  <div class="row between"><span class="sub"><b>${act}</b> dias com meta em 365 · <b>${hm(tot)}</b> lidos no total · <b>${sum(pages).toLocaleString('pt-BR')}</b> páginas</span><span class="legend">menos <i style="background:var(--surface2)"></i><i style="background:var(--g1)"></i><i style="background:var(--g2)"></i><i style="background:var(--g3)"></i><i style="background:var(--g4)"></i> mais (≥2× meta)</span></div>`});
+add('padroes','best-hour','Melhor horário de leitura','Descobre a janela em que você realmente lê, para marcar o hábito nela.',['p2'],'s6',()=>{
+  const h=hours90(),top=[...h.keys()].sort((a,b)=>h[b]-h[a]).slice(0,3);const night=pct(sum(h.slice(20,24)),sum(h));
+  return bars(h,{h:100,labels:h.map((_,i)=>i),hi:top,unit:' min',w:360})+`<div class="alert"><b>${night}%</b> do seu tempo cai entre 20h e 24h. Pico às <b>${top[0]}h</b>. Hora de proteger esse horário na agenda.</div>`});
+add('padroes','weekday','Padrão por dia da semana','Média por dia da semana nos últimos 90 dias: mostra o elo fraco da semana.',['p2'],'s3',()=>{
+  const a=Array(7).fill(0),c=Array(7).fill(0);for(let i=N-90;i<N;i++){a[dow(i)]+=mins[i];c[dow(i)]++}const v=a.map((x,i)=>x/c[i]);const lo=v.indexOf(Math.min(...v)),hi2=v.indexOf(Math.max(...v));
+  return bars(v,{h:90,labels:DOW,hi:[hi2],unit:' min/dia',w:260})+`<div class="sub">Mais forte: <b>${DOW[hi2]}</b> (${Math.round(v[hi2])} min). Elo fraco: <b>${DOW[lo]}</b> (${Math.round(v[lo])} min).</div>`});
+add('padroes','week-cmp','Esta semana vs. semana passada','Comparação direta, dia a dia, com variação em %: um rival que é você mesmo.',['p1'],'s3',()=>{
+  const a=week(0),b=week(1),ta=sum(a),tb=sum(b),d=pct(ta-tb,tb),mx=Math.max(...a,...b,1);
+  return `<div class="num" style="font-size:32px">${hm(ta)}<small>${d>=0?'+':''}${d}% vs ${hm(tb)}</small></div><svg viewBox="0 0 260 100" width="100%" role="img">${a.map((v,i)=>`<rect x="${i*37+4}" y="${90-b[i]/mx*84}" width="14" height="${b[i]/mx*84}" rx="2" fill="var(--g1)"><title>${DOW[i]} passada: ${b[i]} min</title></rect><rect x="${i*37+19}" y="${90-v/mx*84}" width="14" height="${v/mx*84}" rx="2" fill="var(--g3)"><title>${DOW[i]} esta: ${v} min</title></rect><text x="${i*37+19}" y="100" text-anchor="middle">${DOW[i][0]}</text>`).join('')}</svg><div class="legend"><i style="background:var(--g1)"></i>passada <i style="background:var(--g3)"></i>esta</div>`});
+add('padroes','session-len','Duração das sessões','Histograma do tamanho das sessões: mostra se você lê em rajadas curtas ou longas.',['p2'],'s3',()=>{
+  const ss=sessions.filter(s=>s.i>=N-90),B=[['<10',0,10],['10–20',10,20],['20–40',20,40],['40–60',40,60],['60+',60,999]];const v=B.map(b=>ss.filter(s=>s.m>=b[1]&&s.m<b[2]).length);
+  return bars(v,{h:80,labels:B.map(b=>b[0]),unit:' sessões',w:240})+`<div class="sub">Sessões mais comuns: <b>${B[v.indexOf(Math.max(...v))][0]} min</b>. Sessões curtas também contam.</div>`});
+add('padroes','vs-self','Você vs. você de 90 dias atrás','Compara os últimos 90 dias com os 90 anteriores: mostra evolução mesmo quando ela é lenta.',['p1'],'s3',()=>{
+  const A=[N-90,N],P=[N-180,N-90],f=(r,fn)=>fn(r[0],r[1]);const mn=r=>sum(mins.slice(...r)),dd=r=>mins.slice(...r).filter(m=>m>=S.goal).length,pg=r=>sum(pages.slice(...r));
+  const rows=[['Minutos',mn],['Dias com meta',dd],['Páginas',pg]];
+  return `<table><tr><th></th><th class="r">Antes</th><th class="r">Agora</th><th class="r">Δ</th></tr>${rows.map(([n,fn])=>{const a=fn(A),p=fn(P),d=pct(a-p,p);return `<tr><td>${n}</td><td class="r mono">${p.toLocaleString('pt-BR')}</td><td class="r mono">${a.toLocaleString('pt-BR')}</td><td class="r mono" style="color:${d>=0?'var(--g4)':'var(--danger)'}">${d>=0?'+':''}${d}%</td></tr>`}).join('')}</table>`});
+add('padroes','planner','Plano da semana (blocos)','Reserve blocos de leitura na agenda; mostra quanto tempo sua semana promete.',['p2'],'s6',()=>{
+  const R3=['Manhã','Tarde','Noite'];let g='<span></span>'+DOW.map(d=>`<span>${d}</span>`).join('');
+  R3.forEach((r,ri)=>{g+=`<span class="l">${r}</span>`;DOW.forEach((_,d)=>{const k=d+'-'+ri;g+=`<button data-act="plan" data-v="${k}" aria-pressed="${S.plan.includes(k)}" aria-label="${DOW[d]} ${r}"></button>`})});
+  const h=hours90(),tot=sum(h),sl=[sum(h.slice(5,12)),sum(h.slice(12,18)),sum(h.slice(18,24))].map(x=>pct(x,tot));
+  return `<div class="plan">${g}</div><div class="sub"><b>${S.plan.length} blocos</b> × ${S.goal} min = <b>${hm(S.plan.length*S.goal)}</b> planejados. Seu histórico: manhã ${sl[0]}% · tarde ${sl[1]}% · noite ${sl[2]}%.</div>`});
+add('padroes','cue','Gatilho do hábito','Intenção de implementação: “depois de X, eu faço Y”. Prende a leitura a algo que já acontece.',['p2'],'s6',()=>{
+  const sel=(k,o)=>`<select data-act="cue" data-k="${k}" aria-label="${k}">${o.map(x=>`<option ${S.cue[k]===x?'selected':''}>${x}</option>`).join('')}</select>`;
+  return `<div class="row">${sel('when',['Depois do café da manhã','Ao chegar em casa','Depois do jantar','Antes de dormir','No transporte'])}${sel('mins',['5 min','10 min','20 min','30 min'])}${sel('where',['na mesa, com o Kindle','na cama','no ônibus','no sofá'])}</div>
+  <div class="alert ok"><b>${S.cue.when}</b>, eu leio <b>${S.cue.mins}</b> ${S.cue.where}.</div><div class="sub">Esta frase poderia virar o lembrete do dia no topo do painel.</div>`});
+
+/* ---- FOCO ---- */
+add('foco','focus','Livro em foco (um por vez)','Escolha um livro principal; os demais ficam “congelados” até você terminar.',['p2'],'s6',()=>{
+  const b=bk(S.focus),ops=open();
+  return `<div class="bk">${cover(b,true)}<div class="meta"><div class="t" style="font-size:16px">${b.t}</div><div class="sub">${b.a}</div><div class="num" style="font-size:30px;margin:8px 0">${b.pct}%</div><div class="track"><i style="width:${b.pct}%"></i></div><div class="sub" style="margin-top:6px">${b.ch} · faltam ${b.p-bookPages(b)} págs</div></div></div>
+  <div class="lbl">Trocar foco</div><div class="row">${ops.map(o=>`<button class="chip" data-act="focus" data-v="${o.id}" aria-pressed="${o.id===S.focus}">${sh(o)}</button>`).join('')}</div>`});
+add('foco','wip','Limite de livros abertos (WIP)','Mostra quantos livros você tem em andamento versus o limite que se impôs.',['p2'],'s3',()=>{
+  const o=open().length,over=o>S.wip,started=BOOKS.length,fin=BOOKS.filter(b=>b.st==='lido').length;
+  return `<div class="num">${o}<small>abertos · limite ${S.wip}</small></div><div class="alert ${over?'warn':'ok'}">${over?`<b>${o-S.wip} livros acima do limite.</b> Termine ou arquive antes de abrir outro.`:'Dentro do limite. Pode abrir um novo.'}</div>
+  <div class="row"><span class="sub">Limite:</span>${[1,2,3].map(n=>`<button class="chip" data-act="wip" data-v="${n}" aria-pressed="${S.wip===n}">${n}</button>`).join('')}</div>
+  <div class="sub">Taxa de conclusão: <b>${pct(fin,started)}%</b> (${fin} de ${started} iniciados em 12 meses)</div>`});
+add('foco','funnel','Funil: iniciados → terminados','Barra segmentada mostrando para onde vão os livros que você começa.',['p2'],'s3',()=>{
+  const g=[['Terminados',BOOKS.filter(b=>b.st==='lido').length,'var(--g3)'],['Lendo',BOOKS.filter(b=>b.st==='lendo').length,'var(--g1)'],['Pausados',BOOKS.filter(b=>b.st==='pausado').length,'var(--warn)']];const t=sum(g.map(x=>x[1]));
+  return `<div style="display:flex;height:16px;border-radius:8px;overflow:hidden;gap:2px">${g.map(x=>`<div style="flex:${x[1]};background:${x[2]}" title="${x[0]}: ${x[1]}"></div>`).join('')}</div>${g.map(x=>`<div class="row between"><span class="row"><i style="width:10px;height:10px;border-radius:3px;background:${x[2]}"></i>${x[0]}</span><span class="mono">${x[1]} <span class="sub">(${pct(x[1],t)}%)</span></span></div>`).join('')}<div class="sub">Meta: subir a taxa de terminados a 70%.</div>`});
+add('foco','stalled','Livros parados: decida','Cada livro sem leitura há muito tempo pede uma decisão: retomar, adiar ou arquivar.',['p2'],'s6',()=>{
+  const st=BOOKS.filter(b=>b.st!=='lido'&&b.last>=14);if(!st.length)return '<div class="sub">Nada parado.</div>';
+  return st.map(b=>{const d=S.decide[b.id];return `<div class="bk" style="${d==='arq'?'opacity:.45':''}">${cover(b)}<div class="meta"><div class="t">${sh(b)}</div><div class="sub">parado há <b style="color:var(--warn)">${b.last} dias</b> · ${b.pct}% lido</div><div class="row" style="margin-top:6px">${d&&d!=='x'?`<span class="mono sub">${d==='arq'?'Arquivado':d==='adi'?'Adiado 7 dias':'Em foco agora'}</span><button class="btn sm" data-act="decide" data-id="${b.id}" data-v="x">Desfazer</button>`:`<button class="btn sm" data-act="decide" data-id="${b.id}" data-v="ret">Retomar</button><button class="btn sm" data-act="decide" data-id="${b.id}" data-v="adi">Adiar</button><button class="btn sm danger" data-act="decide" data-id="${b.id}" data-v="arq">Arquivar</button>`}</div></div></div>`}).join('')});
+add('foco','almost','Linha de chegada','Destaca livros acima de 70%: terminar um quase pronto rende mais do que abrir outro.',['p2'],'s3',()=>{
+  const a=BOOKS.filter(b=>b.st!=='lido'&&b.pct>=50);return a.map(b=>{const left=b.p-bookPages(b);return `<div class="bk">${cover(b)}<div class="meta"><div class="t">${sh(b)}</div><div class="track" style="margin:6px 0"><i style="width:${b.pct}%"></i></div><div class="sub"><b>${left} págs</b> ≈ ${hm(left/ppmRecent())}</div></div></div>`}).join('')+`<div class="sub">Gamificação: “Faltam ${hm(Math.min(...a.map(b=>(b.p-bookPages(b))/ppmRecent())))} para fechar um livro”.</div>`});
+add('foco','eta','Simulador de data de término','Arraste os minutos diários e veja quando cada livro aberto termina; aproxima o fim.',['p2'],'s6',()=>{
+  const rows=open().map(b=>{const left=b.p-bookPages(b),days=Math.ceil(left/(S.pace*ppmRecent())),d=new Date(TODAY.getTime()+days*864e5);return {b,days,d}}).sort((a,b)=>a.days-b.days);
+  return `<div class="row between"><span class="lbl">Minutos por dia</span><span class="mono hl">${S.pace} min</span></div><input type="range" min="5" max="90" step="5" value="${S.pace}" data-act="pace" aria-label="Minutos por dia">
+  <table>${rows.map(r=>`<tr><td>${sh(r.b)}</td><td class="r mono">${r.days} d</td><td class="r mono sub">${fd(r.d)}</td></tr>`).join('')}</table>`});
+add('foco','queue','Fila de espera (desbloqueio)','Os próximos livros ficam trancados até você terminar o atual. Cria um prêmio por concluir.',['p2'],'s6',()=>{
+  const b=bk(S.focus),Q=[['Types and Programming Languages','Pierce'],['Computer Systems: A Programmer’s Perspective','Bryant, O’Hallaron'],['Compilers: Principles, Techniques, and Tools','Aho et al.']];
+  return Q.map((q,i)=>`<div class="row lock" style="flex-wrap:nowrap"><span style="color:var(--muted)">${icon.shield('currentColor')}</span><div style="flex:1"><div class="t">${q[0]}</div><div class="sub">${q[1]}</div></div><span class="mono sub">${i===0?'libera aos 100%':'após o 1º'}</span></div>`).join('')+`<div class="track"><i style="width:${b.pct}%"></i></div><div class="sub">Desbloqueio do próximo: ${b.pct}% do livro em foco concluído (${sh(b)}).</div>`});
+add('foco','year-goal','Meta anual de livros','Livros terminados por mês contra a meta do ano; calcula o ritmo necessário.',['p2'],'s6',()=>{
+  const fin=sum(FINISH_BY_MONTH),exp=Math.round(YEAR_GOAL*(278/365)),wl=(new Date(2026,11,31)-TODAY)/864e5/7,need=YEAR_GOAL-fin;
+  return `<div class="row between"><div class="num">${fin}<small>de ${YEAR_GOAL} livros em 2026</small></div><div class="alert ${fin<exp?'warn':'ok'}" style="max-width:200px">Esperado hoje: <b>${exp}</b>. ${fin<exp?`Atraso de ${exp-fin}.`:'Em dia.'}</div></div>
+  ${bars(FINISH_BY_MONTH,{h:60,labels:['J','F','M','A','M','J','J','A','S','O','N','D'],unit:' livro(s)',w:360,hi:[9]})}<div class="sub">Para fechar a meta: 1 livro a cada <b>${(wl/need).toFixed(1).replace('.',',')} semanas</b>.</div>`});
+
+/* ---- APRENDIZADO ---- */
+add('aprendizado','xp','XP e nível','Transforma minutos e páginas em XP; o nível dá uma sensação concreta de evolução.',['p1'],'s4',()=>{
+  const xp=sum(mins)+sum(pages)*2+S.quests.length*20,lv=Math.floor(Math.sqrt(xp/60)),T=['Hello World','Variável','Loop','Função','Ponteiro','Recursão','Compilador','Kernel','Sistema distribuído'];
+  const a=lv*lv*60,b=(lv+1)*(lv+1)*60;
+  return `<div class="num">Nv ${lv}<small>${T[Math.min(T.length-1,Math.floor(lv/2)-1)]}</small></div><div class="track"><i style="width:${(xp-a)/(b-a)*100}%"></i></div><div class="sub mono">${xp.toLocaleString('pt-BR')} / ${b.toLocaleString('pt-BR')} XP</div><div class="sub">XP = 1 por minuto + 2 por página + missões.</div>`});
+add('aprendizado','skills','Trilha de competências','Progresso por tema da computação; ataca a sensação de “não estou aprendendo nada”.',['p1'],'s8',()=>{
+  const T={};BOOKS.forEach(b=>{(T[b.topic]=T[b.topic]||{p:0,b:[]});T[b.topic].p+=bookPages(b);T[b.topic].b.push(b)});
+  return `<table><tr><th>Tema</th><th>Livros</th><th style="width:30%">Nível</th><th class="r">Págs</th></tr>${Object.entries(T).sort((a,b)=>b[1].p-a[1].p).map(([k,v])=>{const lv=Math.floor(v.p/250),r=v.p%250;return `<tr><td><b>${k}</b></td><td class="sub">${v.b.map(sh).join(', ')}</td><td><div class="row" style="flex-wrap:nowrap"><span class="mono">Nv ${lv}</span><div class="track" style="flex:1"><i style="width:${r/250*100}%"></i></div></div></td><td class="r mono">${v.p}</td></tr>`}).join('')}</table><div class="sub">A cada 250 páginas em um tema, sobe um nível. Livros pausados travam seus temas.</div>`});
+add('aprendizado','cum','Páginas acumuladas e marcos','Curva de páginas lidas com bandeiras nos livros concluídos e equivalentes tangíveis.',['p1'],'s8',()=>{
+  let c=0;const cum=pages.map(p=>c+=p),tot=c,w=700,h=130;
+  const pts=cum.map((v,i)=>`${(i/(N-1)*w).toFixed(1)},${(h-v/tot*(h-10)).toFixed(1)}`);
+  const fl=BOOKS.filter(b=>b.endIdx!==undefined).map(b=>{const x=b.endIdx/(N-1)*w,y=h-cum[b.endIdx]/tot*(h-10);return `<line x1="${x}" y1="${y}" x2="${x}" y2="${h}" stroke="var(--g3)" stroke-dasharray="3 3"/><circle cx="${x}" cy="${y}" r="5" fill="var(--g4)"><title>${b.t} — concluído em ${b.end}</title></circle><text x="${x}" y="${y-10}" text-anchor="middle">${sh(b)}</text>`}).join('');
+  return `<svg viewBox="0 0 ${w} ${h+4}" width="100%" role="img" aria-label="Páginas acumuladas"><polygon points="0,${h} ${pts.join(' ')} ${w},${h}" fill="var(--g1)" opacity=".6"/><polyline points="${pts.join(' ')}" fill="none" stroke="var(--g3)" stroke-width="2"/>${fl}</svg>
+  <div class="row between"><span class="sub"><b>${tot.toLocaleString('pt-BR')} páginas</b> em 12 meses</span><span class="sub">≈ ${(tot/1312).toFixed(1).replace('.',',')}× o CLRS · ≈ ${(tot/614).toFixed(1).replace('.',',')}× o DDIA</span></div>`});
+add('aprendizado','speed','Velocidade de leitura','Páginas por hora por semana: se a curva sobe, você sente que está ficando mais fluente.',['p1'],'s4',()=>{
+  const v=Array.from({length:16},(_,k)=>{const s=N-112+k*7;return sum(pages.slice(s,s+7))/Math.max(1,sum(mins.slice(s,s+7)))*60});
+  return `<div class="num">${v[15].toFixed(0)}<small>págs/h · ${v[15]>=v[0]?'+':''}${pct(v[15]-v[0],v[0])}% em 16 sem</small></div>${spark(v)}<div class="sub">Livros técnicos têm ritmo menor; compare só consigo mesmo.</div>`});
+add('aprendizado','checkpoints','Checkpoints de aprendizado','Checklist por capítulo (explicar, praticar, resumir): mede compreensão, não só páginas.',['p1'],'s4',()=>{
+  const C=['Resumi o capítulo em 3 linhas','Fiz 1 exercício ou experimento','Expliquei em voz alta, sem olhar','Conectei com algo que uso no trabalho'];
+  return `<div class="lbl">${bk(S.focus).ch}</div>`+C.map((c,i)=>`<label class="chk"><input type="checkbox" data-act="cp" data-v="${i}" ${S.cps.includes(String(i))?'checked':''}><span>${c}</span></label>`).join('')+`<div class="track"><i style="width:${S.cps.length/C.length*100}%"></i></div><div class="sub">${S.cps.length===C.length?'Capítulo dominado. +50 XP':`${S.cps.length}/${C.length} para dominar o capítulo`}</div>`});
+add('aprendizado','badges','Conquistas','Selos por marcos de hábito e de conclusão; os bloqueados mostram quanto falta.',['p1','p2'],'s12',()=>{
+  const b=bestStreak(),h=sessions.filter(s=>s.h<7).length,n=sessions.filter(s=>s.h>=23||s.h<1).length,mx=Math.max(...mins);
+  const B=[['7 dias seguidos',b>=7,Math.min(b,7),7],['30 dias seguidos',b>=30,Math.min(b,30),30],['100 dias seguidos',b>=100,Math.min(b,100),100],['Madrugador (20 sessões antes das 7h)',h>=20,Math.min(h,20),20],['Coruja (20 sessões após 23h)',n>=20,Math.min(n,20),20],['Maratona (2h em um dia)',mx>=120,Math.min(mx,120),120],['Fechou 1 livro',true,1,1],['4 livros no ano',sum(FINISH_BY_MONTH)>=4,sum(FINISH_BY_MONTH),4],['Meta anual (8 livros)',false,sum(FINISH_BY_MONTH),8],['Fim do funil (0 livros pausados)',false,BOOKS.filter(x=>x.st==='pausado').length?0:1,1]];
+  return `<div class="badges">${B.map(x=>`<div class="badge ${x[1]?'on':''}"><div class="ic">${x[1]?icon.ok:icon.star}</div><b>${x[0]}</b><span>${x[1]?'Conquistado':`${x[2]}/${x[3]}`}</span>${x[1]?'':`<div class="track" style="height:5px"><i style="width:${x[2]/x[3]*100}%"></i></div>`}</div>`).join('')}</div>`});
+add('aprendizado','review','Retrospectiva da semana','Resumo automático em texto curto, com um ajuste sugerido para a próxima semana.',['p1','p2'],'s12',()=>{
+  const a=week(0),b=week(1),ta=sum(a),tb=sum(b),d=pct(ta-tb,tb),dd=a.filter(m=>m>=S.goal).length,best=a.indexOf(Math.max(...a));
+  const pg=sum(pages.slice(N-7)),o=open().length;
+  return `<div class="alert"><b>Semana de ${fd(dateOf(N-1-dow(N-1)))} a ${fd(dateOf(N-1))}:</b> você leu <b>${hm(ta)}</b> (${d>=0?'+':''}${d}% vs semana anterior) em <b>${dd}</b> dias com meta, ~${pg} páginas. Melhor dia: <b>${DOW[best]}</b> (${a[best]} min).</div>
+  <div class="alert warn"><b>Ajuste sugerido:</b> ${o>S.wip?`você tem ${o} livros abertos para um limite de ${S.wip}. Escolha um para terminar nas próximas 2 semanas e arquive ou adie os outros.`:'mantenha o ritmo e abra o próximo livro da fila só depois de terminar o atual.'}</div>`});
+
+const SECS=[['hoje','Hoje','O que fazer agora: meta, risco e o próximo passo.'],['corrente','Corrente e hábito','Sequências, proteções e regras que sustentam a consistência.'],['padroes','Padrões e planejamento','Quando e como você lê; transformar o padrão em plano.'],['foco','Foco e conclusão','Ideias para começar menos livros e terminar mais.'],['aprendizado','Progresso e aprendizado','Provas visíveis de que você está aprendendo.']];
+
+/* ============ RENDER ============ */
+const main=document.getElementById('main');
+main.innerHTML=SECS.map(([k,t,d])=>`<section class="sec" data-od-id="sec-${k}"><h2>${t}</h2><p>${d}</p><div class="grid">${W.filter(w=>w.sec===k).map(w=>`
+<article class="w ${w.span}" id="w-${w.id}" data-id="${w.id}" data-od-id="widget-${w.id}">
+ <div class="wh"><div><h3>${w.title}</h3><p class="idea">Ideia: ${w.idea}</p></div>
+ <div class="mk" role="group" aria-label="Decidir ${w.title}"><button class="k" data-mark="keep" aria-label="Manter" title="Manter">${icon.ok}</button><button class="d" data-mark="drop" aria-label="Descartar" title="Descartar">${icon.x}</button></div></div>
+ <div class="pains">${w.pains.map(p=>`<span class="pain ${p}">${p==='p1'?'Dor: sem progresso':'Dor: não termino'}</span>`).join('')}</div>
+ <div class="wb"></div></article>`).join('')}</div></section>`).join('');
+function paint(){
+  W.forEach(w=>{const el=document.querySelector(`#w-${w.id} .wb`);const fe=document.activeElement;const keep=fe&&el.contains(fe)&&fe.dataset.act==='pace'; if(keep)return;el.innerHTML=w.body()});
+  save();marks();
+}
+function marks(){
+  let k=0,d=0;
+  W.forEach(w=>{const el=document.getElementById('w-'+w.id),m=S.marks[w.id];
+    if(m)el.dataset.mark=m;else delete el.dataset.mark;
+    el.querySelectorAll('.mk button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mark===m)));
+    const f=S.filter;el.hidden=!(f==='all'||(f==='keep'&&m==='keep')||(f==='drop'&&m==='drop')||(f==='open'&&!m)||(f==='p1'&&w.pains.includes('p1'))||(f==='p2'&&w.pains.includes('p2')));
+    if(m==='keep')k++;if(m==='drop')d++});
+  document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===S.filter)));
+  document.querySelectorAll('section.sec').forEach(s=>s.hidden=![...s.querySelectorAll('.w')].some(x=>!x.hidden));
+  document.getElementById('tally').innerHTML=`<div><b>${W.length}</b><span>ideias</span></div><div><b>${k}</b><span>mantidas</span></div><div><b>${d}</b><span>descartadas</span></div><div><b>${W.length-k-d}</b><span>sem decisão</span></div>`;
+  save();
+}
+document.addEventListener('click',e=>{
+  const mk=e.target.closest('[data-mark]');
+  if(mk&&mk.closest('.w')){const id=mk.closest('.w').dataset.id;S.marks[id]=S.marks[id]===mk.dataset.mark?undefined:mk.dataset.mark;if(!S.marks[id])delete S.marks[id];return marks()}
+  const f=e.target.closest('[data-filter]');if(f){S.filter=f.dataset.filter;return marks()}
+  const a=e.target.closest('[data-act]');if(!a||a.tagName==='INPUT'||a.tagName==='SELECT')return;
+  const v=a.dataset.v,act=a.dataset.act;
+  if(act==='goal')S.goal=+v;
+  else if(act==='shield'){const i=S.shield.indexOf(N-1);i>=0?S.shield.splice(i,1):S.shield.push(N-1)}
+  else if(act==='plan'){const i=S.plan.indexOf(v);i>=0?S.plan.splice(i,1):S.plan.push(v)}
+  else if(act==='focus'){S.focus=v;S.cps=[]}
+  else if(act==='wip')S.wip=+v;
+  else if(act==='decide'){if(v==='x')delete S.decide[a.dataset.id];else{S.decide[a.dataset.id]=v;if(v==='ret'){S.focus=a.dataset.id;S.cps=[]}}}
+  else if(act==='open-book')return toast('No app real: abriria o livro no Kindle na página '+bk(S.focus).pg);
+  paint();
+});
+document.addEventListener('change',e=>{
+  const a=e.target.dataset.act;if(!a)return;
+  if(a==='quest'||a==='cp'){const arr=a==='quest'?S.quests:S.cps,v=a==='quest'?+e.target.dataset.v:e.target.dataset.v,i=arr.indexOf(v);i>=0?arr.splice(i,1):arr.push(v)}
+  if(a==='cue')S.cue[e.target.dataset.k]=e.target.value;
+  paint();
+});
+document.addEventListener('input',e=>{if(e.target.dataset.act==='pace'){S.pace=+e.target.value;const t=document.createElement('div'),el=document.querySelector('#w-eta .wb');t.innerHTML=W.find(x=>x.id==='eta').body();el.querySelector('table').innerHTML=t.querySelector('table').innerHTML;el.querySelector('.mono.hl').textContent=S.pace+' min';save()}});
+document.getElementById('btn-reset').onclick=()=>{S.marks={};marks();toast('Marcas limpas')};
+document.getElementById('btn-export').onclick=()=>{
+  const ex=document.getElementById('export'),line=m=>W.filter(w=>S.marks[w.id]===m).map(w=>`- ${w.title}`).join('\n')||'(nenhuma)';
+  document.getElementById('export-text').value=`MANTER (${W.filter(w=>S.marks[w.id]==='keep').length}):\n${line('keep')}\n\nDESCARTAR:\n${line('drop')}\n\nSEM DECISÃO:\n${W.filter(w=>!S.marks[w.id]).map(w=>`- ${w.title}`).join('\n')||'(nenhuma)'}`;
+  ex.style.display=ex.style.display==='block'?'none':'block'};
+document.getElementById('btn-copy').onclick=async()=>{const t=document.getElementById('export-text');try{await navigator.clipboard.writeText(t.value);toast('Copiado')}catch{t.select();toast('Selecionado: use Ctrl+C')}};
+paint();
+</script>
+</body>
+</html>
