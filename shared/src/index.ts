@@ -265,12 +265,15 @@ export type Missao = ProgressoJogo & { id: string; titulo: string; md5: string |
 
 export type Desafio = ProgressoJogo & { id: string; titulo: string; inicio: string; fim: string }; // YYYY-MM-DD
 
-export type CartaDesafio = ProgressoJogo & { id: string; titulo: string; trocada: boolean; podeTrocar: boolean };
+// 'perdido': a deadline hour passed before the goal was reached
+export type EstadoDesafio = 'ativo' | 'feito' | 'perdido';
+
+export type CartaDesafio = ProgressoJogo & { id: string; titulo: string; estado: EstadoDesafio; trocada: boolean; podeTrocar: boolean };
 
 export type DesafioRelampago = ProgressoJogo & {
   titulo: string;
   prazoHora: number; // local hour; counts reading that started before it
-  estado: 'ativo' | 'feito' | 'perdido';
+  estado: EstadoDesafio;
 };
 
 export type Chefe = {

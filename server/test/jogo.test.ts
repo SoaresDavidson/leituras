@@ -157,6 +157,16 @@ describe('carta de desafio', () => {
       ['resgate', 15, true],
     ]);
   });
+
+  it('loses a card with a deadline once the hour passes unfinished', () => {
+    const estados = (now: number) => cartas(contexto(db, TZ, now)).map((c) => [c.id, c.estado]);
+    expect(estados(Date.parse('2026-10-03T11:59:00Z'))).toContainEqual(['antes-9h', 'ativo']); // 08:59
+    expect(estados(NOW)).toContainEqual(['antes-9h', 'perdido']);
+    expect(estados(NOW).filter(([, e]) => e === 'perdido')).toHaveLength(1);
+
+    seed([mkBook('A', 1000)], readAt('2026-10-03T09:00:00Z', 'A', 1000, 1, 15)); // 06:00
+    expect(estados(NOW)).toContainEqual(['antes-9h', 'feito']);
+  });
 });
 
 describe('desafio relâmpago', () => {

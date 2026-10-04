@@ -1,5 +1,5 @@
 import type {
-  BookDetail, CartaDesafio, Chefe, ChefeDerrotado, ClasseLeitor, CorridaFantasma, Desafio, DesafioRelampago, HabitoMeta, Jogo, Medalha, Missao,
+  BookDetail, CartaDesafio, Chefe, ChefeDerrotado, ClasseLeitor, CorridaFantasma, Desafio, DesafioRelampago, EstadoDesafio, HabitoMeta, Jogo, Medalha, Missao,
   ProgressoJogo, ReadingStatus, Recorde, UnidadeJogo,
 } from '@leituras/shared';
 import { listBookDetails, toSummary } from './books';
@@ -254,7 +254,11 @@ export function desafiosMes(ctx: Contexto): Desafio[] {
   ];
 }
 
-export function cartas(ctx: Contexto): (ProgressoJogo & { id: CartaId; titulo: string })[] {
+// A challenge with a deadline hour is lost once that hour arrives unfinished
+const estadoPrazo = (feito: boolean, hora: number, prazoHora?: number): EstadoDesafio =>
+  feito ? 'feito' : prazoHora !== undefined && hora >= prazoHora ? 'perdido' : 'ativo';
+
+export function cartas(ctx: Contexto): (ProgressoJogo & { id: CartaId; titulo: string; estado: EstadoDesafio })[] {
   const dia = ctx.dias.get(ctx.hoje);
   const parados = new Set(paradosOntem(ctx).map((b) => b.md5));
   const segundosParados = [...(dia?.livros ?? [])].filter(([md5]) => parados.has(md5)).reduce((a, [, l]) => a + l.segundos, 0);
@@ -266,7 +270,10 @@ export function cartas(ctx: Contexto): (ProgressoJogo & { id: CartaId; titulo: s
     'dois-livros': dia?.livros.size ?? 0,
     resgate: minutos(segundosParados),
   };
-  return CARTAS.map((c) => ({ id: c.id, titulo: c.titulo, ...prog(atual[c.id], c.alvo, c.unidade) }));
+  return CARTAS.map((c) => {
+    const p = prog(atual[c.id], c.alvo, c.unidade);
+    return { id: c.id, titulo: c.titulo, ...p, estado: estadoPrazo(p.feito, ctx.hora, 'prazoHora' in c ? c.prazoHora : undefined) };
+  });
 }
 
 const getSetting = (db: Db, key: string) => (db.prepare('SELECT value FROM setting WHERE key = ?').get(key) as { value: string } | undefined)?.value;
@@ -295,7 +302,7 @@ function relampago(ctx: Contexto): DesafioRelampago {
   const prazoHora = sortear(RELAMPAGO_PRAZOS, `relampago-prazo:${ctx.hoje}`);
   const alvo = sortear(RELAMPAGO_ALVOS, `relampago-alvo:${ctx.hoje}`);
   const p = prog(minutosHoje(ctx, (h) => h < prazoHora), alvo, 'min');
-  return { titulo: `Ler ${alvo} min antes das ${prazoHora}h`, prazoHora, ...p, estado: p.feito ? 'feito' : ctx.hora >= prazoHora ? 'perdido' : 'ativo' };
+  return { titulo: `Ler ${alvo} min antes das ${prazoHora}h`, prazoHora, ...p, estado: estadoPrazo(p.feito, ctx.hora, prazoHora) };
 }
 
 // ---- bosses and ghost race ----

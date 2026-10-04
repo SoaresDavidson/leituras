@@ -9,13 +9,13 @@ export const RELAMPAGO_PRAZOS = [12, 18, 22];
 export const RELAMPAGO_ALVOS = [15, 20, 30];
 
 export const CARTAS = [
-  { id: 'antes-9h', titulo: 'Ler 15 min antes das 9h', alvo: 15, unidade: 'min' },
+  { id: 'antes-9h', titulo: 'Ler 15 min antes das 9h', alvo: 15, unidade: 'min', prazoHora: 9 },
   { id: 'noite', titulo: 'Ler 15 min depois das 21h', alvo: 15, unidade: 'min' },
   { id: 'trinta-paginas', titulo: 'Ler 30 páginas hoje', alvo: 30, unidade: 'págs' },
   { id: 'sessao-25', titulo: 'Uma sessão de 25 min sem pausa', alvo: 25, unidade: 'min' },
   { id: 'dois-livros', titulo: 'Ler 2 livros diferentes hoje', alvo: 2, unidade: 'livros' },
   { id: 'resgate', titulo: 'Ler 10 min de um livro parado', alvo: 10, unidade: 'min' },
-] as const satisfies readonly { id: string; titulo: string; alvo: number; unidade: UnidadeJogo }[];
+] as const satisfies readonly { id: string; titulo: string; alvo: number; unidade: UnidadeJogo; prazoHora?: number }[];
 
 export type CartaId = (typeof CARTAS)[number]['id'];
 

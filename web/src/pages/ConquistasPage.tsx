@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { Chefe, ClasseLeitor, Desafio, Jogo, Medalha, ProgressoJogo, Recorde, UnidadeJogo } from '@leituras/shared';
+import type { Chefe, ClasseLeitor, Desafio, EstadoDesafio, Jogo, Medalha, ProgressoJogo, Recorde, UnidadeJogo } from '@leituras/shared';
 import { ApiError, getJogo, trocarCarta } from '../api';
 import { MONTHS, fmtHours } from '../format';
 import { Card } from '../components/Card';
@@ -51,6 +51,8 @@ function Objetivo({ titulo, p, children }: { titulo: ReactNode; p: ProgressoJogo
   );
 }
 
+const PERDIDO = { texto: 'perdido', cor: 'border-danger text-danger' };
+
 function Missoes({ jogo }: { jogo: Jogo }) {
   const feitas = jogo.missoes.filter((m) => m.feito).length;
   return (
@@ -74,13 +76,20 @@ function Carta({ jogo }: { jogo: Jogo }) {
     onError: () => qc.invalidateQueries({ queryKey: ['jogo'] }),
   });
   const { carta } = jogo;
+  const perdida = carta.estado === 'perdido';
   const erro = trocar.error instanceof ApiError && trocar.error.status === 409 ? 'A carta de hoje já foi trocada.' : 'Não foi possível trocar a carta.';
   return (
     <Card title="Carta de desafio">
-      <div className="callout mb-3 flex min-h-20 items-center font-mono font-semibold">
+      <div className={`callout mb-3 flex min-h-20 items-center font-mono font-semibold ${perdida ? 'border-line bg-transparent text-muted line-through' : ''}`}>
         {carta.titulo}
       </div>
       <Objetivo titulo={carta.feito ? 'Carta cumprida' : 'Progresso de hoje'} p={carta} />
+      {perdida && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className={`tag ${PERDIDO.cor}`}>{PERDIDO.texto}</span>
+          <span className="muted">{carta.podeTrocar ? 'Passou do horário. Troque a carta para tentar outra.' : 'Passou do horário.'}</span>
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button onClick={() => trocar.mutate()} disabled={!carta.podeTrocar || trocar.isPending}
           className="btn">
@@ -95,11 +104,11 @@ function Carta({ jogo }: { jogo: Jogo }) {
 
 function Relampago({ jogo }: { jogo: Jogo }) {
   const r = jogo.relampago;
-  const estado = {
+  const estado = ({
     ativo: { texto: `até as ${r.prazoHora}h`, cor: 'border-warn text-warn' },
     feito: { texto: 'cumprido', cor: 'border-ok text-ok' },
-    perdido: { texto: 'acabou o prazo', cor: 'border-line text-muted' },
-  }[r.estado];
+    perdido: PERDIDO,
+  } satisfies Record<EstadoDesafio, typeof PERDIDO>)[r.estado];
   return (
     <Card title="Desafio relâmpago">
       <div className="mb-3 flex items-center justify-between gap-2">
