@@ -258,7 +258,8 @@ export default function AprendizadoPage() {
   const q = useQuery({ queryKey: ['aprendizado'], queryFn: getAprendizado });
   const books = useQuery({ queryKey: ['books'], queryFn: getBooks });
   const a = q.data;
-  const allBooks = books.data ?? [];
+  // fiction is left out of the pickers, like the server leaves it out of the aggregations
+  const estudo = (books.data ?? []).filter((b) => b.tipo !== 'ficcao');
 
   return (
     <>
@@ -273,11 +274,11 @@ export default function AprendizadoPage() {
             <Stat label="Nós com nível" value={a.arvore.flatMap((r) => [r, ...r.filhos]).filter((f) => f.nivel > 0).length} />
           </div>
           <Card title="Revisar hoje"><RevisarHoje notas={a.revisarHoje} /></Card>
-          <Card title="Novo aprendizado"><NovoAprendizado books={allBooks} /></Card>
+          <Card title="Novo aprendizado"><NovoAprendizado books={estudo} /></Card>
           <Card title="Diário de aprendizado"><Diario notas={a.notas} /></Card>
           <Card title="Enferrujamento por área"><Ferrugem areas={a.ferrugem} /></Card>
           <Card title="Árvore de habilidades"><Arvore arvore={a.arvore} /></Card>
-          <Card title="Trilhas"><Trilhas trilhas={a.trilhas} books={allBooks} /></Card>
+          <Card title="Trilhas"><Trilhas trilhas={a.trilhas} books={estudo} /></Card>
           <Card title="Lacunas"><Lacunas lacunas={a.lacunas} /></Card>
           <Card title="Mapa de tópicos"><MapaTopicos topicos={a.topicos} /></Card>
         </>
