@@ -28,7 +28,14 @@ const parse = (d: string) => {
   return new Date(y, m - 1, day);
 };
 
-export default function Heatmap({ daily }: { daily: DailyMinutes[] }) {
+type Props<T> = {
+  daily: T[];
+  bucketOf?: (d: T) => number; // 0-4, overrides the default minutes scale (e.g. to color by goal)
+  label?: (d: T) => string; // cell tooltip
+  ariaLabel?: string;
+};
+
+export default function Heatmap<T extends DailyMinutes>({ daily, bucketOf = (d) => bucket(d.minutes), label, ariaLabel = 'Mapa de calor de leitura' }: Props<T>) {
   if (daily.length === 0) return null;
   const offset = parse(daily[0].date).getDay(); // Sunday-first rows
   const weeks = Math.ceil((daily.length + offset) / 7);
@@ -48,15 +55,15 @@ export default function Heatmap({ daily }: { daily: DailyMinutes[] }) {
     }
     return (
       <rect key={d.date} x={LEFT + col * STEP} y={TOP + row * STEP} width={CELL} height={CELL} rx={2}
-        className={FILLS[bucket(d.minutes)]}>
-        <title>{`${date.toLocaleDateString('pt-BR')}: ${d.minutes} min`}</title>
+        className={FILLS[bucketOf(d)]}>
+        <title>{label ? label(d) : `${date.toLocaleDateString('pt-BR')}: ${d.minutes} min`}</title>
       </rect>
     );
   });
 
   return (
     <div className="overflow-x-auto">
-      <svg width={LEFT + weeks * STEP} height={TOP + 7 * STEP} role="img" aria-label="Mapa de calor de leitura">
+      <svg width={LEFT + weeks * STEP} height={TOP + 7 * STEP} role="img" aria-label={ariaLabel}>
         {labels.map((l) => (
           <text key={l.x} x={l.x} y={10} className="fill-stone-500 text-[10px] dark:fill-stone-400">{l.text}</text>
         ))}

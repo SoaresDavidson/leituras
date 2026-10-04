@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import DashboardPage from './pages/DashboardPage';
 import BookPage from './pages/BookPage';
+import HabitoPage from './pages/HabitoPage';
 import LivrosPage from './pages/LivrosPage';
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/" element={<DashboardPage />} />
             <Route path="/livros" element={<LivrosPage />} />
             <Route path="/livros/:md5" element={<BookPage />} />
+            <Route path="/habito" element={<HabitoPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

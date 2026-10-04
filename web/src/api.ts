@@ -1,8 +1,11 @@
-import type { BookDetail, BookPatch, BookSummary, Dashboard, Foco, LivroExtras, Livros, Metadados, MetadadosPatch } from '@leituras/shared';
+import type {
+  BookDetail, BookPatch, BookSummary, Dashboard, Foco, Habito, HabitoPatch, LivroExtras, Livros, Metadados, MetadadosPatch,
+} from '@leituras/shared';
 
 export class ApiError extends Error {
-  constructor(public status: number) {
-    super(`HTTP ${status}`);
+  // `message` is the server's `{ error }` text when there is one
+  constructor(public status: number, message = `HTTP ${status}`) {
+    super(message);
   }
 }
 
@@ -15,7 +18,10 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (res.status === 401 && path !== '/login' && path !== '/me') {
     window.location.assign('/login');
   }
-  if (!res.ok) throw new ApiError(res.status);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null) as { error?: unknown } | null;
+    throw new ApiError(res.status, typeof body?.error === 'string' ? body.error : undefined);
+  }
   return res.status === 204 ? (undefined as T) : res.json();
 }
 
@@ -32,6 +38,8 @@ export const putFila = (md5s: string[]) => req<Foco>('/fila', { method: 'PUT', b
 export const patchFoco = (patch: { limite?: number; prazoDias?: number }) =>
   req<Foco>('/foco', { method: 'PATCH', body: JSON.stringify(patch) });
 export const coverUrl = (md5: string) => `/api/books/${md5}/cover`;
+export const getHabito = () => req<Habito>('/habito');
+export const patchHabito = (patch: HabitoPatch) => req<Habito>('/habito', { method: 'PATCH', body: JSON.stringify(patch) });
 export const getLivros = () => req<Livros>('/livros');
 export const getLivroExtras = (md5: string) => req<LivroExtras>(`/livros/${md5}`);
 export const putMaisTarde = (md5: string, maisTarde: boolean) =>
