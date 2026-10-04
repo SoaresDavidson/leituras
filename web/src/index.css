@@ -1,3 +1,4 @@
 @import "tailwindcss";
-@custom-variant dark (@media (prefers-color-scheme: dark));
-body { @apply bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100; }
+@import "./styles/theme.css";
+@import "./styles/base.css";
+@import "./styles/components.css";

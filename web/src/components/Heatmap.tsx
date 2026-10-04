@@ -6,13 +6,7 @@ const GAP = 3;
 const STEP = CELL + GAP;
 const LEFT = 28;
 const TOP = 16;
-const FILLS = [
-  'fill-stone-200 dark:fill-stone-800',
-  'fill-emerald-200 dark:fill-emerald-900',
-  'fill-emerald-400 dark:fill-emerald-700',
-  'fill-emerald-500 dark:fill-emerald-500',
-  'fill-emerald-700 dark:fill-emerald-300',
-];
+const FILLS = ['fill-surface-2', 'fill-accent/25', 'fill-accent/50', 'fill-accent/75', 'fill-accent'];
 
 function bucket(min: number) {
   if (min <= 0) return 0;
@@ -65,10 +59,10 @@ export default function Heatmap<T extends DailyMinutes>({ daily, bucketOf = (d) 
     <div className="overflow-x-auto">
       <svg width={LEFT + weeks * STEP} height={TOP + 7 * STEP} role="img" aria-label={ariaLabel}>
         {labels.map((l) => (
-          <text key={l.x} x={l.x} y={10} className="fill-stone-500 text-[10px] dark:fill-stone-400">{l.text}</text>
+          <text key={l.x} x={l.x} y={10} className="fill-muted text-[10px]">{l.text}</text>
         ))}
         {[['seg', 1], ['qua', 3], ['sex', 5]].map(([t, r]) => (
-          <text key={t} x={0} y={TOP + (r as number) * STEP + 10} className="fill-stone-500 text-[10px] dark:fill-stone-400">{t}</text>
+          <text key={t} x={0} y={TOP + (r as number) * STEP + 10} className="fill-muted text-[10px]">{t}</text>
         ))}
         {cells}
       </svg>

@@ -1,0 +1,11 @@
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-bg font-sans text-sm/normal text-fg antialiased;
+  }
+  h1, h2, h3, h4 { @apply font-mono; }
+  button { @apply cursor-pointer disabled:cursor-default; }
+  :focus-visible { @apply rounded outline-2 outline-offset-2 outline-accent; }
+  svg text { @apply font-mono; }
+  input, select, textarea { accent-color: var(--accent); }
+}

@@ -1,6 +1,15 @@
-import { Link, Outlet, useNavigate } from 'react-router';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { logout } from '../api';
+
+const LINKS: [string, string][] = [
+  ['/', 'Painel'],
+  ['/habito', 'Hábito'],
+  ['/retrospectiva', 'Retrospectiva'],
+  ['/aprendizado', 'Aprendizado'],
+  ['/conquistas', 'Conquistas'],
+  ['/livros', 'Livros'],
+];
 
 export default function Layout() {
   const nav = useNavigate();
@@ -12,21 +21,20 @@ export default function Layout() {
   };
   return (
     <>
-      <header className="border-b border-stone-200 dark:border-stone-800">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <Link to="/" className="text-lg font-semibold">Leituras</Link>
-          <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm sm:gap-x-4">
-            <Link to="/" className="hover:underline">Painel</Link>
-            <Link to="/habito" className="hover:underline">Hábito</Link>
-            <Link to="/retrospectiva" className="hover:underline">Retrospectiva</Link>
-            <Link to="/aprendizado" className="hover:underline">Aprendizado</Link>
-            <Link to="/conquistas" className="hover:underline">Conquistas</Link>
-            <Link to="/livros" className="hover:underline">Livros</Link>
-            <button onClick={out} className="rounded border border-stone-300 px-3 py-1 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800">Sair</button>
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3.5 gap-y-1.5 px-4 py-2.5 sm:px-5">
+          <Link to="/" className="font-mono text-base font-bold tracking-tight">
+            <span className="text-accent">▲</span> Leituras
+          </Link>
+          <nav className="flex flex-1 flex-wrap gap-1">
+            {LINKS.map(([to, label]) => (
+              <NavLink key={to} to={to} end={to === '/'} className="nav-link">{label}</NavLink>
+            ))}
           </nav>
+          <button onClick={out} className="btn">Sair</button>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 pb-16 sm:px-5">
         <Outlet />
       </main>
     </>
