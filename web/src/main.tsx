@@ -11,6 +11,7 @@ import HabitoPage from './pages/HabitoPage';
 import LivrosPage from './pages/LivrosPage';
 import RetrospectivaPage from './pages/RetrospectivaPage';
 import AprendizadoPage from './pages/AprendizadoPage';
+import ConquistasPage from './pages/ConquistasPage';
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/habito" element={<HabitoPage />} />
             <Route path="/retrospectiva" element={<RetrospectivaPage />} />
             <Route path="/aprendizado" element={<AprendizadoPage />} />
+            <Route path="/conquistas" element={<ConquistasPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

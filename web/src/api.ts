@@ -1,6 +1,6 @@
 import type {
-  Aprendizado, BookDetail, BookPatch, BookSummary, Dashboard, Foco, Habito, HabitoPatch, LivroAprendizado, LivroExtras, Livros,
-  Metadados, MetadadosPatch, Nota, RetroPeriodo, RetroTipo, Retrospectiva, TrilhaProgresso,
+  Aprendizado, BookDetail, BookPatch, BookSummary, Dashboard, Foco, Habito, HabitoPatch, Jogo, LivroAprendizado, LivroExtras,
+  Livros, Metadados, MetadadosPatch, Nota, RetroPeriodo, RetroTipo, Retrospectiva, TrilhaProgresso,
 } from '@leituras/shared';
 
 export class ApiError extends Error {
@@ -68,3 +68,5 @@ export const revisarNota = (id: number, lembrei: boolean) =>
   req<Nota>(`/aprendizado/notas/${id}/revisao`, { method: 'POST', body: JSON.stringify({ lembrei }) });
 export const putTrilhaItem = (trilha: string, item: string, md5s: string[]) =>
   req<TrilhaProgresso>(`/aprendizado/trilhas/${trilha}/itens/${item}`, { method: 'PUT', body: JSON.stringify({ md5s }) });
+export const getJogo = () => req<Jogo>('/jogo');
+export const trocarCarta = () => req<Jogo>('/jogo/carta/trocar', { method: 'POST' });

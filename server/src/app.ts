@@ -15,6 +15,7 @@ import {
 } from './livros';
 import { GATILHO_MAX, getHabito, readHabitoSettings, updateHabitoSettings } from './habito';
 import { getRetroPeriodo, getRetrospectiva, MAX_OFFSET, updateRetroSettings } from './retrospectiva';
+import { getJogo, trocarCarta } from './jogo';
 
 const STATUSES: ReadingStatus[] = ['lendo', 'lido', 'pausado'];
 
@@ -321,6 +322,15 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     if (result === 'unknown') { res.status(400).json({ error: 'Livro não encontrado' }); return; }
     if (result === 'duplicate') { res.status(400).json({ error: 'Livro repetido no item' }); return; }
     res.json(getAprendizado(db, config.timeZone).trilhas.find((t) => t.id === trilha));
+  });
+
+  // ---- jogo ----
+  api.get('/jogo', (_req, res) => { res.json(getJogo(db, config.timeZone)); });
+
+  api.post('/jogo/carta/trocar', (_req, res) => {
+    const now = Date.now(); // one instant, so a swap near midnight answers for the same day
+    if (!trocarCarta(db, config.timeZone, now)) { res.status(409).json({ error: 'A carta de hoje já foi trocada' }); return; }
+    res.json(getJogo(db, config.timeZone, now));
   });
 
   api.get('/books/:md5/cover', (req, res) => {
