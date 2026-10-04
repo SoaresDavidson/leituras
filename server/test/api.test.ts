@@ -71,6 +71,9 @@ describe('plugin import', () => {
     await agent.patch('/api/books/abc123').send({ arquivado: true }).expect(200);
     await sendImport({ books: [book], stats: [] }).expect(200);
     expect(db.prepare('SELECT arquivado_em FROM book').get()).toEqual({ arquivado_em: expect.any(String) });
+    await agent.put('/api/fila').send({ md5s: ['abc123'] }).expect(200);
+    await sendImport({ books: [book], stats: pageStats(2) }).expect(200);
+    expect(db.prepare('SELECT md5, posicao FROM fila').all()).toEqual([{ md5: 'abc123', posicao: 0 }]);
   });
 });
 

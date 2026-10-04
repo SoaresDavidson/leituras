@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Foco, FocoBook } from '@leituras/shared';
+import type { Dashboard, Foco, FocoBook } from '@leituras/shared';
 import { patchBook, patchFoco, putFila } from '../api';
 import { fmtDate, fmtHours } from '../format';
 import { Card, Stat } from './Card';
@@ -56,8 +56,10 @@ function AbertoItem({ book }: { book: FocoBook }) {
           <ProgressBar value={book.progress} />
           <div className="text-sm text-stone-500 dark:text-stone-400">
             {book.previsao ? `termina ~${fmtDate(book.previsao)}` : 'sem ritmo recente'}
-            {retaFinal && book.minutosRestantes != null && (
-              <span className="ml-2 font-medium text-emerald-600">reta final: faltam ~{fmtHours(book.minutosRestantes)}</span>
+            {book.minutosRestantes != null && (
+              <span className={`ml-2 ${retaFinal ? 'font-medium text-emerald-600' : ''}`}>
+                {retaFinal ? 'reta final: ' : ''}faltam ~{fmtHours(book.minutosRestantes)}
+              </span>
             )}
           </div>
         </div>
@@ -68,7 +70,15 @@ function AbertoItem({ book }: { book: FocoBook }) {
 
 export default function FocoPanel({ foco }: { foco: Foco }) {
   const [ajustando, setAjustando] = useState(false);
-  const fila = useFocoMutation(putFila);
+  const qc = useQueryClient();
+  // Write the returned Foco into the cache right away, so the next ↑/↓/✕ builds on the new order
+  const fila = useMutation({
+    mutationFn: putFila,
+    onSuccess: (novo) => {
+      qc.setQueriesData<Dashboard>({ queryKey: ['dashboard'] }, (d) => d && { ...d, foco: { ...d.foco, fila: novo.fila } });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
   const arquivar = useFocoMutation((md5: string) => patchBook(md5, { arquivado: true }));
   const excedeu = foco.abertos.length > foco.limite;
   const md5s = foco.fila.map((f) => f.book.md5);

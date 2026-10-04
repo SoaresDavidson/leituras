@@ -118,6 +118,12 @@ describe('getFoco', () => {
     expect(foco(2024).taxaConclusao).toEqual({ lidos: 0, abandonados: 0, percentual: null });
   });
 
+  it('does not count an archived book as open even if read recently', () => {
+    seed([mkBook('X', 100), mkBook('Y', 100)], [...read('X', 100, '2026-10-02', 1, 10), ...read('Y', 100, '2026-10-02', 1, 10)]);
+    db.prepare("UPDATE book SET arquivado_em = '2026-10-03' WHERE md5 = 'X'").run();
+    expect(foco().abertos.map((b) => b.md5)).toEqual(['Y']);
+  });
+
   it('reads default settings', () => {
     expect(foco()).toMatchObject({ limite: 2, prazoDias: 45 });
   });

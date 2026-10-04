@@ -63,6 +63,8 @@ function loadStats(db: Db, md5: string): StatRow[] {
 
 function buildDetail(db: Db, row: BookRow, timeZone: string, today: string): BookDetail {
   const stats = computeBookStats(loadStats(db, row.md5), row.pages, timeZone);
+  const arquivado = row.arquivado_em != null && (stats.lastReadAt == null || stats.lastReadAt <= row.arquivado_em);
+  const status = computeStatus({ progress: stats.progress, lastReadAt: stats.lastReadAt, today, statusManual: row.status_manual });
   return {
     md5: row.md5,
     title: row.title,
@@ -70,7 +72,8 @@ function buildDetail(db: Db, row: BookRow, timeZone: string, today: string): Boo
     series: row.series,
     pages: row.pages,
     progress: stats.progress,
-    status: computeStatus({ progress: stats.progress, lastReadAt: stats.lastReadAt, today, statusManual: row.status_manual }),
+    // archiving closes a book: it stops being 'lendo' until read again
+    status: arquivado && status === 'lendo' ? 'pausado' : status,
     statusManual: row.status_manual,
     categoria: row.categoria,
     startedAt: stats.startedAt,
@@ -78,7 +81,7 @@ function buildDetail(db: Db, row: BookRow, timeZone: string, today: string): Boo
     lastReadAt: stats.lastReadAt,
     totalMinutes: Math.round(stats.totalSeconds / 60),
     hasCover: row.cover_status === 'ok',
-    arquivado: row.arquivado_em != null && (stats.lastReadAt == null || stats.lastReadAt <= row.arquivado_em),
+    arquivado,
     topicos: row.topicos,
     sessions: stats.sessions,
     daily: [...stats.daily].map(([date, seconds]) => ({ date, minutes: Math.round(seconds / 60) })),
