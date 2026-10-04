@@ -55,7 +55,12 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
   });
 
   plugin.post('/import', (req: Request, res: Response) => {
-    const { books = [], stats = [] } = req.body as PluginImportPayload;
+    // Lua encodes empty tables as {} on some JSON encoders
+    const emptyObjectAsArray = (v: unknown) =>
+      v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0 ? [] : v;
+    const body = req.body as PluginImportPayload;
+    const books = emptyObjectAsArray(body.books ?? []) as PluginImportPayload['books'];
+    const stats = emptyObjectAsArray(body.stats ?? []) as PluginImportPayload['stats'];
     if (!Array.isArray(books) || !Array.isArray(stats)) {
       res.status(400).json({ error: 'books and stats must be arrays' });
       return;

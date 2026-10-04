@@ -56,6 +56,21 @@ describe('plugin import', () => {
     expect(n).toBe(5);
   });
 
+  it('accepts an empty object as empty stats (Lua encodes empty tables as {})', async () => {
+    await sendImport({ books: [book], stats: {} }).expect(200);
+    const { n } = db.prepare('SELECT COUNT(*) AS n FROM book').get() as { n: number };
+    expect(n).toBe(1);
+  });
+
+  it('accepts an empty object as empty books', async () => {
+    await sendImport({ books: {}, stats: [] }).expect(200);
+  });
+
+  it('still rejects non-array, non-empty values for books and stats', async () => {
+    await sendImport({ books: [book], stats: { a: 1 } }).expect(400);
+    await sendImport({ books: [book], stats: 'x' }).expect(400);
+  });
+
   it('keeps user-owned fields when the book is imported again', async () => {
     await sendImport({ books: [book], stats: [] }).expect(200);
     const agent = await login();
