@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { logout } from '../api';
 
@@ -15,6 +15,7 @@ const LINKS: [string, string][] = [
 export default function Layout() {
   const nav = useNavigate();
   const qc = useQueryClient();
+  const { pathname } = useLocation();
   const out = async () => {
     await logout();
     qc.clear();
@@ -35,8 +36,10 @@ export default function Layout() {
           <button onClick={out} className="btn">Sair</button>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 pb-16 sm:px-5">
-        <Outlet />
+      <main className="mx-auto max-w-6xl px-4 py-6 pb-16 sm:px-5">
+        <div key={pathname} className="animate-enter space-y-6">
+          <Outlet />
+        </div>
       </main>
     </>
   );
