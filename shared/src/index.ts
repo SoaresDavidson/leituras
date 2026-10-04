@@ -65,7 +65,21 @@ export type Dashboard = {
   totals: { booksFinished: number; minutes: number; pages: number };
   daily: DailyMinutes[]; // last 365 days, oldest first, zero days included
   finishedPerMonth: { month: string; count: number }[]; // YYYY-MM for the 12 months of `year`
-  readingNow: BookSummary[];
+  foco: Foco;
+};
+
+export type FocoBook = BookSummary & {
+  previsao: string | null; // YYYY-MM-DD, null = no reading in the last 14 days
+  minutosRestantes: number | null;
+};
+
+export type Foco = {
+  limite: number;
+  prazoDias: number;
+  abertos: FocoBook[]; // reta final (progress >= 75) first, then most recently read
+  fila: { book: BookSummary; liberado: boolean }[];
+  cemiterio: { book: BookSummary; diasParado: number; vencidoHa: number }[];
+  taxaConclusao: { lidos: number; abandonados: number; percentual: number | null }; // percentual 0-100
 };
 
 export type BookDetail = BookSummary & {

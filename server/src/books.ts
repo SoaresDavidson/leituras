@@ -1,6 +1,7 @@
 import type { BookDetail, BookPatch, BookSummary, Dashboard, PluginBook, PluginPageStat, ReadingStatus } from '@leituras/shared';
 import { addDays, dayKey } from './dates';
 import type { Db } from './db';
+import { getFoco } from './foco';
 import { computeBookStats, computeStatus, type StatRow } from './stats';
 
 type BookRow = {
@@ -85,15 +86,19 @@ function buildDetail(db: Db, row: BookRow, timeZone: string, today: string): Boo
   };
 }
 
-function toSummary({ topicos, sessions, daily, progressTimeline, ...summary }: BookDetail): BookSummary {
+export function toSummary({ topicos, sessions, daily, progressTimeline, ...summary }: BookDetail): BookSummary {
   return summary;
 }
 
-export function listBooks(db: Db, timeZone: string, now = Date.now()): BookSummary[] {
+export function listBookDetails(db: Db, timeZone: string, now = Date.now()): BookDetail[] {
   const today = dayKey(now / 1000, timeZone);
   return loadBooks(db)
-    .map((row) => toSummary(buildDetail(db, row, timeZone, today)))
+    .map((row) => buildDetail(db, row, timeZone, today))
     .sort((a, b) => (b.lastReadAt ?? '').localeCompare(a.lastReadAt ?? ''));
+}
+
+export function listBooks(db: Db, timeZone: string, now = Date.now()): BookSummary[] {
+  return listBookDetails(db, timeZone, now).map(toSummary);
 }
 
 export function getBook(db: Db, md5: string, timeZone: string, now = Date.now()): BookDetail | undefined {
@@ -144,6 +149,6 @@ export function getDashboard(db: Db, year: number, timeZone: string, now = Date.
     totals: { booksFinished: finished.length, minutes: Math.round(yearMinutes), pages: pagesThisYear },
     daily,
     finishedPerMonth,
-    readingNow: books.filter((b) => b.status === 'lendo'),
+    foco: getFoco(db, year, timeZone, now),
   };
 }

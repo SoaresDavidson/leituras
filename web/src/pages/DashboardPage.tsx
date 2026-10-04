@@ -46,7 +46,7 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </div>
           </Card>
-          <Card title="Lendo agora"><BookList books={d.readingNow} /></Card>
+          <Card title="Lendo agora"><BookList books={d.foco.abertos} /></Card>
         </>
       )}
       <Card title="Todos os livros">
