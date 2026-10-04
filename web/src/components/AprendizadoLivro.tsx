@@ -5,12 +5,8 @@ import { deleteNota, getLivroAprendizado, postNota, putArea } from '../api';
 import { fmtDate } from '../format';
 import { Card } from './Card';
 
-export const btn = 'rounded border border-stone-300 px-2 py-1 text-sm hover:bg-stone-100 disabled:opacity-40 dark:border-stone-700 dark:hover:bg-stone-800';
-export const input = 'w-full rounded border border-stone-300 bg-transparent px-3 py-2 dark:border-stone-700 dark:bg-stone-900';
-export const primary = 'rounded bg-emerald-600 px-4 py-2 font-medium text-white disabled:opacity-50';
-
 export const ErroInline = ({ show, children = 'Não foi possível salvar. Tente de novo.' }: { show: boolean; children?: string }) =>
-  show ? <p role="alert" className="text-sm text-red-600">{children}</p> : null;
+  show ? <p role="alert" className="error">{children}</p> : null;
 
 export function useAprendizadoMutation<T, R = unknown>(fn: (arg: T) => Promise<R>) {
   const qc = useQueryClient();
@@ -34,11 +30,11 @@ export function NovaNota({ md5, placeholder }: { md5: string; placeholder?: stri
   return (
     <form onSubmit={submit} className="space-y-2">
       <label className="block text-sm">Novo aprendizado
-        <textarea rows={3} maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={placeholder} className={input} />
+        <textarea rows={3} maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={placeholder} className="input" />
       </label>
       <div className="flex items-center gap-3">
-        <button disabled={!md5 || !texto.trim() || salvar.isPending} className={primary}>Salvar</button>
-        {salvar.isError && <span className="text-sm text-red-600">Erro ao salvar.</span>}
+        <button disabled={!md5 || !texto.trim() || salvar.isPending} className="btn-primary">Salvar</button>
+        {salvar.isError && <span className="error">Erro ao salvar.</span>}
       </div>
     </form>
   );
@@ -48,7 +44,7 @@ export function AreaSelect({ arvore, value, onChange, disabled }: {
   arvore: LivroAprendizado['arvore']; value: string | null; onChange: (area: string | null) => void; disabled?: boolean;
 }) {
   return (
-    <select value={value ?? ''} disabled={disabled} onChange={(e) => onChange(e.target.value || null)} className={input}>
+    <select value={value ?? ''} disabled={disabled} onChange={(e) => onChange(e.target.value || null)} className="input">
       <option value="">Sem área</option>
       {arvore.map((raiz) => (
         <optgroup key={raiz.id} label={raiz.nome}>
@@ -68,14 +64,14 @@ export default function AprendizadoLivro({ book }: { book: BookDetail }) {
 
   return (
     <Card title="O que aprendi">
-      {lido && <p className="mb-3 text-sm font-medium text-emerald-700 dark:text-emerald-400">Terminou! O que ficou deste livro?</p>}
+      {lido && <p className="success mb-3">Terminou! O que ficou deste livro?</p>}
       {livro.isError && (
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-red-600">Erro ao carregar os aprendizados.</span>
-          <button onClick={() => livro.refetch()} className={btn}>Tentar de novo</button>
+        <div className="flex items-center gap-3">
+          <span className="error">Erro ao carregar os aprendizados.</span>
+          <button onClick={() => livro.refetch()} className="btn">Tentar de novo</button>
         </div>
       )}
-      {livro.isLoading && <p className="text-sm text-stone-500">Carregando…</p>}
+      {livro.isLoading && <p className="muted">Carregando…</p>}
       {livro.data && (
       <div className="space-y-4">
         <label className="block text-sm">Área da árvore de habilidades
@@ -83,14 +79,14 @@ export default function AprendizadoLivro({ book }: { book: BookDetail }) {
         </label>
         <ErroInline show={area.isError}>Não foi possível mudar a área.</ErroInline>
         {livro.data && livro.data.notas.length > 0 && (
-          <ul className="divide-y divide-stone-200 dark:divide-stone-800">
+          <ul className="list-divided">
             {livro.data.notas.map((n) => (
               <li key={n.id} className="flex items-start gap-2 py-2">
                 <div className="min-w-0 flex-1">
                   <p className="whitespace-pre-wrap break-words">{n.texto}</p>
-                  <p className="text-xs text-stone-500">{fmtDate(n.criadoEm)} · revisar em {fmtDate(n.proximaRevisao)}</p>
+                  <p className="hint">{fmtDate(n.criadoEm)} · revisar em {fmtDate(n.proximaRevisao)}</p>
                 </div>
-                <button aria-label="Apagar aprendizado" disabled={apagar.isPending} onClick={() => apagar.mutate(n.id)} className={btn}>✕</button>
+                <button aria-label="Apagar aprendizado" disabled={apagar.isPending} onClick={() => apagar.mutate(n.id)} className="btn">✕</button>
               </li>
             ))}
           </ul>
