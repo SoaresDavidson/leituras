@@ -1,4 +1,4 @@
-import type { BookPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus } from '@leituras/shared';
+import type { BookPatch, HabitoPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus } from '@leituras/shared';
 import express, { type Request, type Response } from 'express';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -9,6 +9,7 @@ import { coverPath, fetchMissingCovers } from './covers';
 import { dayKey } from './dates';
 import type { Db } from './db';
 import { getFoco, setFila, updateFocoSettings } from './foco';
+import { GATILHO_MAX, getHabito, readHabitoSettings, updateHabitoSettings } from './habito';
 
 const STATUSES: ReadingStatus[] = ['lendo', 'lido', 'pausado'];
 
@@ -34,6 +35,29 @@ function parseFocoPatch(body: unknown): { limite?: number; prazoDias?: number } 
   if (limite !== undefined && !isIntIn(limite, 1, 10)) return null;
   if (prazoDias !== undefined && !isIntIn(prazoDias, 7, 365)) return null;
   return { limite: limite as number | undefined, prazoDias: prazoDias as number | undefined };
+}
+
+const HABITO_RANGES = { metaDiaMinutos: 600, metaDiaPaginas: 1000, metaMesMinutos: 18000, metaMesPaginas: 30000 } as const;
+
+// Returns an error message (pt-BR) or the parsed patch; `current` is used to reject goals left all at 0
+function parseHabitoPatch(body: unknown, current: ReturnType<typeof readHabitoSettings>): HabitoPatch | string {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) return 'Ajustes inválidos';
+  const input = body as Record<string, unknown>;
+  const patch: HabitoPatch = {};
+  for (const [field, max] of Object.entries(HABITO_RANGES)) {
+    const value = input[field];
+    if (value === undefined) continue;
+    if (!isIntIn(value, 0, max)) return 'Meta inválida';
+    patch[field as keyof typeof HABITO_RANGES] = value as number;
+  }
+  if (input.gatilho !== undefined) {
+    if (typeof input.gatilho !== 'string' || input.gatilho.trim().length > GATILHO_MAX) return `O gatilho deve ter até ${GATILHO_MAX} caracteres`;
+    patch.gatilho = input.gatilho.trim();
+  }
+  const { dia, mes } = current.metas;
+  if ((patch.metaDiaMinutos ?? dia.minutos) === 0 && (patch.metaDiaPaginas ?? dia.paginas) === 0) return 'A meta do dia precisa de minutos ou páginas';
+  if ((patch.metaMesMinutos ?? mes.minutos) === 0 && (patch.metaMesPaginas ?? mes.paginas) === 0) return 'A meta do mês precisa de minutos ou páginas';
+  return patch;
 }
 
 export function createApp(db: Db, config: Config, options: { fetchCovers?: boolean } = {}) {
@@ -128,6 +152,15 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     if (!patch) { res.status(400).json({ error: 'Ajustes inválidos' }); return; }
     updateFocoSettings(db, patch);
     res.json(currentFoco());
+  });
+
+  api.get('/habito', (_req, res) => { res.json(getHabito(db, config.timeZone)); });
+
+  api.patch('/habito', (req, res) => {
+    const patch = parseHabitoPatch(req.body, readHabitoSettings(db));
+    if (typeof patch === 'string') { res.status(400).json({ error: patch }); return; }
+    updateHabitoSettings(db, patch);
+    res.json(getHabito(db, config.timeZone));
   });
 
   api.get('/books/:md5/cover', (req, res) => {
