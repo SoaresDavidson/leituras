@@ -83,18 +83,18 @@ describe('getFoco', () => {
   });
 
   it('forecasts from the last 14 days and returns null without recent reading', () => {
-    // one page a day from 09-20 to 10-03 (14 days), on top of 16 pages read on 09-01
+    // one page a day, in a 5-minute session, from 09-20 to 10-03 (14 days), on top of 16 pages read on 09-01
     const days = Array.from({ length: 14 }, (_, i) => new Date(Date.UTC(2026, 8, 20 + i)).toISOString().slice(0, 10));
     seed(
       [mkBook('R', 100), mkBook('S', 100)],
       [
         ...read('R', 100, '2026-09-01', 1, 16),
-        ...days.flatMap((day, i) => read('R', 100, day, 17 + i, 17 + i)),
+        ...days.flatMap((day, i) => read('R', 100, day, 17 + i, 17 + i).map((s) => ({ ...s, duration: 300 }))),
         ...read('S', 100, '2026-09-10', 1, 5),
       ],
     );
     const abertos = foco().abertos;
-    expect(abertos.find((b) => b.md5 === 'R')).toMatchObject({ progress: 30, previsao: '2026-12-12', minutosRestantes: 70 });
+    expect(abertos.find((b) => b.md5 === 'R')).toMatchObject({ progress: 30, previsao: '2026-12-12', minutosRestantes: 350 });
     expect(abertos.find((b) => b.md5 === 'S')).toMatchObject({ previsao: null, minutosRestantes: null });
   });
 
@@ -104,7 +104,7 @@ describe('getFoco', () => {
   });
 
   it('orders reta final first among abertos', () => {
-    seed([mkBook('R80', 10), mkBook('R20', 10)], [...read('R80', 10, '2026-10-01', 1, 8), ...read('R20', 10, '2026-10-02', 1, 2)]);
+    seed([mkBook('R80', 10), mkBook('R20', 50)], [...read('R80', 10, '2026-10-01', 1, 8), ...read('R20', 50, '2026-10-02', 1, 10)]);
     expect(foco().abertos.map((b) => b.progress)).toEqual([80, 20]);
   });
 

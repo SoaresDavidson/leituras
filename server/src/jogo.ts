@@ -13,7 +13,7 @@ import {
   CARTAS, CHEFE_PAGINAS, CLASSES, CLASSES_JANELA_DIAS, MEDALHAS, RELAMPAGO_ALVOS, RELAMPAGO_PRAZOS, SESSAO_LONGA_MINUTOS,
   type CartaId, type ClasseId, type MedalhaId,
 } from './jogo-dados';
-import { computeStatus, SESSION_GAP_SECONDS } from './stats';
+import { computeBookStats, effectiveStatus, SESSION_GAP_SECONDS, type StatRow } from './stats';
 
 const CARTA_SETTING = 'jogo.carta_trocada_em';
 const RESGATE_GAP_DIAS = 30;
@@ -114,14 +114,21 @@ export function contexto(db: Db, timeZone: string, now = Date.now()): Contexto {
   const arquivadoEm = new Map((db.prepare('SELECT md5, arquivado_em FROM book').all() as { md5: string; arquivado_em: string | null }[])
     .map((r) => [r.md5, r.arquivado_em]));
   const ontemDia = addDays(hoje, -1);
+  // Yesterday's state runs the same stats and status rule on the stats recorded before today
+  const statsAntes = new Map<string, StatRow[]>();
+  for (const row of db.prepare('SELECT book_md5, page, start_time, duration, total_pages FROM page_stat').all() as (StatRow & { book_md5: string })[]) {
+    if (dayKey(row.start_time, timeZone) >= hoje) continue;
+    const list = statsAntes.get(row.book_md5);
+    if (list) list.push(row);
+    else statsAntes.set(row.book_md5, [row]);
+  }
   const ontem = new Map(livros.map((b): [string, Ontem] => {
-    const last = b.progressTimeline.filter((p) => p.date < hoje).at(-1);
-    const progress = last?.progress ?? 0;
-    const lastReadAt = last?.date ?? null;
+    const { progress, lastReadAt, lastActiveAt } = computeBookStats(statsAntes.get(b.md5) ?? [], b.pages, timeZone);
     const em = arquivadoEm.get(b.md5) ?? null;
-    const arquivado = em != null && em < hoje && (lastReadAt == null || lastReadAt <= em);
-    const status = computeStatus({ progress, lastReadAt, today: ontemDia, statusManual: null });
-    return [b.md5, { progress, lastReadAt, arquivado, status: arquivado && status === 'lendo' ? 'pausado' : status }];
+    const { status, arquivado } = effectiveStatus({
+      progress, lastActiveAt, today: ontemDia, statusManual: null, arquivadoEm: em != null && em < hoje ? em : null,
+    });
+    return [b.md5, { progress, lastReadAt, arquivado, status }];
   }));
 
   const { metas } = readHabitoSettings(db);

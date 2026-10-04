@@ -128,8 +128,8 @@ describe('web api', () => {
     const archived = await agent.patch('/api/books/abc123').send({ arquivado: true }).expect(200);
     expect(archived.body.arquivado).toBe(true);
 
-    const later = Math.floor(Date.now() / 1000) + 86_400; // reading after the archive date
-    await sendImport({ books: [book], stats: pageStats(4, later).slice(3) }).expect(200);
+    const later = Math.floor(Date.now() / 1000) + 86_400; // a real session (5 min) after the archive date
+    await sendImport({ books: [book], stats: pageStats(8, later).slice(3) }).expect(200);
     const after = await agent.get('/api/books/abc123').expect(200);
     expect(after.body.arquivado).toBe(false);
   });

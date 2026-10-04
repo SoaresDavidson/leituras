@@ -2,7 +2,7 @@ import type { BookDetail, BookPatch, BookSummary, Dashboard, PluginBook, PluginP
 import { addDays, dayKey } from './dates';
 import type { Db } from './db';
 import { getFoco } from './foco';
-import { computeBookStats, computeStatus, type StatRow } from './stats';
+import { computeBookStats, effectiveStatus, type StatRow } from './stats';
 
 type BookRow = {
   md5: string;
@@ -65,8 +65,9 @@ function loadStats(db: Db, md5: string): StatRow[] {
 
 function buildDetail(db: Db, row: BookRow, timeZone: string, today: string): BookDetail {
   const stats = computeBookStats(loadStats(db, row.md5), row.pages, timeZone);
-  const arquivado = row.arquivado_em != null && (stats.lastReadAt == null || stats.lastReadAt <= row.arquivado_em);
-  const status = computeStatus({ progress: stats.progress, lastReadAt: stats.lastReadAt, today, statusManual: row.status_manual });
+  const { status, arquivado } = effectiveStatus({
+    progress: stats.progress, lastActiveAt: stats.lastActiveAt, today, statusManual: row.status_manual, arquivadoEm: row.arquivado_em,
+  });
   return {
     md5: row.md5,
     title: row.title,
@@ -74,8 +75,7 @@ function buildDetail(db: Db, row: BookRow, timeZone: string, today: string): Boo
     series: row.series,
     pages: row.pages,
     progress: stats.progress,
-    // archiving closes a book: it stops being 'lendo' until read again
-    status: arquivado && status === 'lendo' ? 'pausado' : status,
+    status,
     statusManual: row.status_manual,
     categoria: row.categoria,
     startedAt: stats.startedAt,
