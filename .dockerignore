@@ -5,3 +5,9 @@ data
 .env
 .git
 plugin
+# not needed to build the image; changes here should not trigger a rebuild
+.claude
+.playwright-mcp
+docs
+ideias-painel
+*.md
