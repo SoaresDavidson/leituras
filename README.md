@@ -29,6 +29,12 @@ return {
 }
 ```
 
+## Dashboard settings
+
+The Settings tab shows or hides items of the Painel (focus, the three indicators, yearly activity, books finished per month, book list).
+The choice is stored per instance on the server (`setting` table, keys `painel.*`), so it is the same in every browser and device.
+Hiding only affects display, never data or calculations. With no saved choice everything is visible; "Restaurar padrão" removes it.
+
 ## Development
 
 ```bash

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router';
+import { PAINEL_ITENS } from '@leituras/shared';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { getBooks, getDashboard } from '../api';
+import { getBooks, getDashboard, getPainelConfig } from '../api';
 import { CHART, tooltipStyle } from '../styles/chart';
 import { MONTHS, fmtHours } from '../format';
 import { Card, Stat } from '../components/Card';
@@ -14,6 +16,10 @@ export default function DashboardPage() {
   const [year, setYear] = useState(now);
   const dash = useQuery({ queryKey: ['dashboard', year], queryFn: () => getDashboard(year) });
   const books = useQuery({ queryKey: ['books'], queryFn: getBooks });
+  const cfg = useQuery({ queryKey: ['painel-config'], queryFn: getPainelConfig });
+  // Until the preference loads (or if it fails) everything stays visible
+  const show = (item: (typeof PAINEL_ITENS)[number]) => cfg.data?.[item] ?? true;
+  const allHidden = cfg.data !== undefined && PAINEL_ITENS.every((i) => !cfg.data[i]);
   const years = Array.from({ length: 6 }, (_, i) => now - i);
   const d = dash.data;
 
@@ -29,14 +35,16 @@ export default function DashboardPage() {
       {dash.isError && <p className="error">Erro ao carregar o painel.</p>}
       {d && (
         <>
-          <FocoPanel foco={d.foco} />
-          <div className="grid-3">
-            <Stat label="Livros concluídos" value={d.totals.booksFinished} />
-            <Stat label="Horas lidas" value={fmtHours(d.totals.minutes)} />
-            <Stat label="Páginas" value={d.totals.pages} />
-          </div>
-          <Card title="Atividade (últimos 365 dias)"><Heatmap daily={d.daily} /></Card>
-          <Card title="Livros concluídos por mês">
+          {show('foco') && <FocoPanel foco={d.foco} />}
+          {(show('livrosConcluidos') || show('horas') || show('paginas')) && (
+            <div className="grid-3">
+              {show('livrosConcluidos') && <Stat label="Livros concluídos" value={d.totals.booksFinished} />}
+              {show('horas') && <Stat label="Horas lidas" value={fmtHours(d.totals.minutes)} />}
+              {show('paginas') && <Stat label="Páginas" value={d.totals.pages} />}
+            </div>
+          )}
+          {show('atividade') && <Card title="Atividade (últimos 365 dias)"><Heatmap daily={d.daily} /></Card>}
+          {show('concluidosPorMes') && <Card title="Livros concluídos por mês">
             <div className="h-56">
               <ResponsiveContainer>
                 <BarChart data={d.finishedPerMonth.map((m) => ({ ...m, label: MONTHS[Number(m.month.slice(5)) - 1] }))}>
@@ -48,12 +56,20 @@ export default function DashboardPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </Card>
+          </Card>}
         </>
       )}
-      <Card title="Todos os livros">
-        {books.isLoading ? <p>Carregando…</p> : <BookList books={books.data ?? []} />}
-      </Card>
+      {show('todosLivros') && (
+        <Card title="Todos os livros">
+          {books.isLoading ? <p>Carregando…</p> : <BookList books={books.data ?? []} />}
+        </Card>
+      )}
+      {allHidden && (
+        <div className="callout">
+          <p className="font-bold">Todos os itens do painel estão ocultos.</p>
+          <p className="muted">Seus dados continuam salvos. <Link to="/configuracoes" className="underline">Abra as Configurações</Link> para mostrar os itens de novo.</p>
+        </div>
+      )}
     </>
   );
 }

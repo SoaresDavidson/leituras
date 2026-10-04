@@ -1,6 +1,6 @@
 import type {
   Aprendizado, BookDetail, BookPatch, BookSummary, Dashboard, Foco, Habito, HabitoPatch, Jogo, LivroAprendizado, LivroExtras,
-  Livros, Metadados, MetadadosPatch, Nota, RetroPeriodo, RetroTipo, Retrospectiva, TrilhaProgresso,
+  Livros, Metadados, MetadadosPatch, Nota, PainelConfig, PainelConfigPatch, RetroPeriodo, RetroTipo, Retrospectiva, TrilhaProgresso,
 } from '@leituras/shared';
 
 export class ApiError extends Error {
@@ -39,7 +39,10 @@ export const putFila = (md5s: string[]) => req<Foco>('/fila', { method: 'PUT', b
 export const patchFoco = (patch: { limite?: number; prazoDias?: number }) =>
   req<Foco>('/foco', { method: 'PATCH', body: JSON.stringify(patch) });
 export const coverUrl = (md5: string) => `/api/books/${md5}/cover`;
-export const getHabito = () => req<Habito>('/habito');
+export const getPainelConfig = () => req<PainelConfig>('/painel/config');
+export const patchPainelConfig = (patch: PainelConfigPatch) => req<PainelConfig>('/painel/config', { method: 'PATCH', body: JSON.stringify(patch) });
+export const resetPainelConfig = () => req<PainelConfig>('/painel/config', { method: 'DELETE' });
+export const getHabito =() => req<Habito>('/habito');
 export const patchHabito = (patch: HabitoPatch) => req<Habito>('/habito', { method: 'PATCH', body: JSON.stringify(patch) });
 export const getLivros = () => req<Livros>('/livros');
 export const getLivroExtras = (md5: string) => req<LivroExtras>(`/livros/${md5}`);
