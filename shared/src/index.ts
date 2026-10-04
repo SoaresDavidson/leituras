@@ -55,6 +55,7 @@ export type BookSummary = {
   lastReadAt: string | null; // YYYY-MM-DD
   totalMinutes: number;
   hasCover: boolean;
+  arquivado: boolean; // archived and not read since
 };
 
 export type DailyMinutes = { date: string; minutes: number };
@@ -78,4 +79,5 @@ export type BookPatch = Partial<{
   categoria: string;
   statusManual: ReadingStatus | null;
   topicos: string;
+  arquivado: boolean;
 }>;

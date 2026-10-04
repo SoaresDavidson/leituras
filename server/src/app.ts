@@ -6,13 +6,14 @@ import { checkPassword, createSession, destroySession, loginRateLimit, requireSe
 import { getBook, getDashboard, importPluginData, listBooks, updateBook } from './books';
 import type { Config } from './config';
 import { coverPath, fetchMissingCovers } from './covers';
+import { dayKey } from './dates';
 import type { Db } from './db';
 
 const STATUSES: ReadingStatus[] = ['lendo', 'lido', 'pausado'];
 
 function parsePatch(body: unknown): BookPatch | null {
   if (typeof body !== 'object' || body === null) return null;
-  const { categoria, topicos, statusManual } = body as Record<string, unknown>;
+  const { categoria, topicos, statusManual, arquivado } = body as Record<string, unknown>;
   const patch: BookPatch = {};
   if (categoria !== undefined) { if (typeof categoria !== 'string') return null; patch.categoria = categoria.trim(); }
   if (topicos !== undefined) { if (typeof topicos !== 'string') return null; patch.topicos = topicos; }
@@ -20,6 +21,7 @@ function parsePatch(body: unknown): BookPatch | null {
     if (statusManual !== null && !STATUSES.includes(statusManual as ReadingStatus)) return null;
     patch.statusManual = statusManual as ReadingStatus | null;
   }
+  if (arquivado !== undefined) { if (typeof arquivado !== 'boolean') return null; patch.arquivado = arquivado; }
   return patch;
 }
 
@@ -95,7 +97,7 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
   api.patch('/books/:md5', (req, res) => {
     const patch = parsePatch(req.body);
     if (!patch) { res.status(400).json({ error: 'Dados inválidos' }); return; }
-    if (!updateBook(db, req.params.md5, patch)) { res.status(404).json({ error: 'Livro não encontrado' }); return; }
+    if (!updateBook(db, req.params.md5, patch, dayKey(Date.now() / 1000, config.timeZone))) { res.status(404).json({ error: 'Livro não encontrado' }); return; }
     res.json(getBook(db, req.params.md5, config.timeZone));
   });
 

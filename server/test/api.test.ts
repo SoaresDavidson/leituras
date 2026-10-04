@@ -64,6 +64,14 @@ describe('plugin import', () => {
     const res = await agent.get('/api/books/abc123').expect(200);
     expect(res.body).toMatchObject({ title: 'Duna (ed. revisada)', categoria: 'computação', topicos: 'grafos' });
   });
+
+  it('keeps arquivado_em when the book is imported again', async () => {
+    await sendImport({ books: [book], stats: [] }).expect(200);
+    const agent = await login();
+    await agent.patch('/api/books/abc123').send({ arquivado: true }).expect(200);
+    await sendImport({ books: [book], stats: [] }).expect(200);
+    expect(db.prepare('SELECT arquivado_em FROM book').get()).toEqual({ arquivado_em: expect.any(String) });
+  });
 });
 
 describe('web api', () => {
@@ -93,6 +101,37 @@ describe('web api', () => {
 
     const after = await agent.patch('/api/books/abc123').send({ statusManual: 'pausado' }).expect(200);
     expect(after.body.status).toBe('pausado');
+  });
+
+  it('archives a book and unarchives it when read on a later day', async () => {
+    const old = Math.floor(Date.now() / 1000) - 60 * 86_400;
+    await sendImport({ books: [book], stats: pageStats(3, old) }).expect(200);
+    const agent = await login();
+    const archived = await agent.patch('/api/books/abc123').send({ arquivado: true }).expect(200);
+    expect(archived.body.arquivado).toBe(true);
+
+    const later = Math.floor(Date.now() / 1000) + 86_400; // reading after the archive date
+    await sendImport({ books: [book], stats: pageStats(4, later).slice(3) }).expect(200);
+    const after = await agent.get('/api/books/abc123').expect(200);
+    expect(after.body.arquivado).toBe(false);
+  });
+
+  it('keeps a book archived when re-read on the same day it was archived', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    // stats seconds away from now, so the test does not cross midnight
+    await sendImport({ books: [book], stats: pageStats(3, now - 200) }).expect(200);
+    const agent = await login();
+    await agent.patch('/api/books/abc123').send({ arquivado: true }).expect(200);
+    await sendImport({ books: [book], stats: pageStats(4, now - 190).slice(3) }).expect(200);
+    expect((await agent.get('/api/books/abc123')).body.arquivado).toBe(true);
+  });
+
+  it('unarchives explicitly and rejects a non-boolean arquivado', async () => {
+    await sendImport({ books: [book], stats: [] }).expect(200);
+    const agent = await login();
+    await agent.patch('/api/books/abc123').send({ arquivado: true }).expect(200);
+    expect((await agent.patch('/api/books/abc123').send({ arquivado: false })).body.arquivado).toBe(false);
+    await agent.patch('/api/books/abc123').send({ arquivado: 'sim' }).expect(400);
   });
 
   it('rejects an invalid status', async () => {

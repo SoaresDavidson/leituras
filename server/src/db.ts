@@ -42,6 +42,13 @@ const MIGRATIONS = [
     expires_at INTEGER NOT NULL
   );
   `,
+  `
+  ALTER TABLE book ADD COLUMN arquivado_em TEXT; -- YYYY-MM-DD, NULL = never archived
+  CREATE TABLE fila (
+    md5 TEXT PRIMARY KEY REFERENCES book(md5) ON DELETE CASCADE,
+    posicao INTEGER NOT NULL
+  );
+  `,
 ];
 
 export function openDb(filename: string): Db {
