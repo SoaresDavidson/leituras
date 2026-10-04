@@ -20,15 +20,18 @@
 
   /* ---- stats ---- */
   .stat-label { @apply text-xs text-muted; }
-  .stat-value { @apply font-mono text-xl/tight font-bold; }
+  .stat-value { @apply font-mono text-lg/tight font-bold break-words sm:text-xl/tight; }
 
   /* ---- grids ---- */
   .grid-2 { @apply grid grid-cols-1 gap-3.5 md:grid-cols-2; }
   .grid-3 { @apply grid grid-cols-1 gap-3.5 sm:grid-cols-3; }
+  /* a row of short stats (however many are shown): stays in one row on phones, with tighter cards */
+  .grid-stats { @apply grid auto-cols-fr grid-flow-col gap-2 sm:gap-3.5; }
+  .grid-stats > .card { @apply px-3 py-3 sm:px-[18px] sm:pt-4 sm:pb-[18px]; }
 
   /* ---- controls ---- */
   .btn {
-    @apply inline-flex min-h-[34px] items-center justify-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[12.5px]
+    @apply inline-flex min-h-[34px] pointer-coarse:min-h-10 items-center justify-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[12.5px]
       transition duration-150 hover:border-muted hover:bg-surface-2 active:scale-[.97] disabled:opacity-40 disabled:hover:bg-transparent
       aria-pressed:border-fg aria-pressed:bg-fg aria-pressed:text-bg;
   }
@@ -55,7 +58,7 @@
 
   /* ---- navigation ---- */
   .nav-link {
-    @apply inline-flex min-h-9 items-center rounded-lg px-2.5 transition-colors duration-150 py-2 text-[13px] text-fg hover:bg-surface-2
+    @apply inline-flex min-h-9 pointer-coarse:min-h-10 items-center rounded-lg px-2.5 transition-colors duration-150 py-2 text-[13px] text-fg hover:bg-surface-2
       aria-[current=page]:bg-surface-2 aria-[current=page]:text-accent;
   }
 }

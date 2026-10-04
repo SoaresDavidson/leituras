@@ -37,7 +37,7 @@ export default function DashboardPage() {
         <>
           {show('foco') && <FocoPanel foco={d.foco} />}
           {(show('livrosConcluidos') || show('horas') || show('paginas')) && (
-            <div className="grid-3">
+            <div className="grid-stats">
               {show('livrosConcluidos') && <Stat label="Livros concluídos" value={d.totals.booksFinished} />}
               {show('horas') && <Stat label="Horas lidas" value={fmtHours(d.totals.minutes)} />}
               {show('paginas') && <Stat label="Páginas" value={d.totals.pages} />}

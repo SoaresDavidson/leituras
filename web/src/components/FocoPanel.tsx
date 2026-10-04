@@ -91,7 +91,7 @@ export default function FocoPanel({ foco }: { foco: Foco }) {
 
   return (
     <>
-      <div className="grid-3">
+      <div className="grid-stats">
         <Card>
           <div className={`stat-value ${excedeu ? 'text-warn' : ''}`}>{foco.abertos.length}/{foco.limite}</div>
           <div className="stat-label">Abertos</div>

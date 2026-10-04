@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { DailyMinutes } from '@leituras/shared';
 import { MONTHS } from '../format';
 
@@ -30,6 +31,12 @@ type Props<T> = {
 };
 
 export default function Heatmap<T extends DailyMinutes>({ daily, bucketOf = (d) => bucket(d.minutes), label, ariaLabel = 'Mapa de calor de leitura' }: Props<T>) {
+  const scroller = useRef<HTMLDivElement>(null);
+  // When the year does not fit (phones), start at the most recent weeks
+  useEffect(() => {
+    const el = scroller.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [daily.length]);
   if (daily.length === 0) return null;
   const offset = parse(daily[0].date).getDay(); // Sunday-first rows
   const weeks = Math.ceil((daily.length + offset) / 7);
@@ -56,7 +63,7 @@ export default function Heatmap<T extends DailyMinutes>({ daily, bucketOf = (d) 
   });
 
   return (
-    <div className="overflow-x-auto">
+    <div ref={scroller} className="overflow-x-auto">
       <svg width={LEFT + weeks * STEP} height={TOP + 7 * STEP} role="img" aria-label={ariaLabel}>
         {labels.map((l) => (
           <text key={l.x} x={l.x} y={10} className="fill-muted text-[10px]">{l.text}</text>

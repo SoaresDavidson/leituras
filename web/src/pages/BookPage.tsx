@@ -283,9 +283,9 @@ export default function BookPage() {
       <Link to="/livros" className="link">← Livros</Link>
       <Card>
         <div className="flex gap-4">
-          <Cover book={b} className="h-40 w-28" />
+          <Cover book={b} className="h-32 w-22 sm:h-40 sm:w-28" />
           <div className="min-w-0 flex-1 space-y-2">
-            <h1 className="page-title">{b.title}</h1>
+            <h1 className="page-title text-xl break-words sm:text-2xl">{b.title}</h1>
             <div className="muted">{b.authors}</div>
             {b.series && <div className="text-sm">Série: {b.series}</div>}
             {extras.data?.anoPublicacao != null && <div className="text-sm">Publicado em {extras.data.anoPublicacao}</div>}
