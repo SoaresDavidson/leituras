@@ -1,4 +1,4 @@
-import type { BookDetail, BookPatch, BookSummary, Dashboard, Foco } from '@leituras/shared';
+import type { BookDetail, BookPatch, BookSummary, Dashboard, Foco, Habito, HabitoPatch } from '@leituras/shared';
 
 export class ApiError extends Error {
   constructor(public status: number) {
@@ -32,3 +32,5 @@ export const putFila = (md5s: string[]) => req<Foco>('/fila', { method: 'PUT', b
 export const patchFoco = (patch: { limite?: number; prazoDias?: number }) =>
   req<Foco>('/foco', { method: 'PATCH', body: JSON.stringify(patch) });
 export const coverUrl = (md5: string) => `/api/books/${md5}/cover`;
+export const getHabito = () => req<Habito>('/habito');
+export const patchHabito = (patch: HabitoPatch) => req<Habito>('/habito', { method: 'PATCH', body: JSON.stringify(patch) });

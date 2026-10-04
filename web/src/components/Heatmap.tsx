@@ -28,7 +28,8 @@ const parse = (d: string) => {
   return new Date(y, m - 1, day);
 };
 
-export default function Heatmap({ daily }: { daily: DailyMinutes[] }) {
+// `bucketOf` (0-4) overrides the default minutes scale, e.g. to color by goal
+export default function Heatmap<T extends DailyMinutes>({ daily, bucketOf = (d) => bucket(d.minutes) }: { daily: T[]; bucketOf?: (d: T) => number }) {
   if (daily.length === 0) return null;
   const offset = parse(daily[0].date).getDay(); // Sunday-first rows
   const weeks = Math.ceil((daily.length + offset) / 7);
@@ -48,7 +49,7 @@ export default function Heatmap({ daily }: { daily: DailyMinutes[] }) {
     }
     return (
       <rect key={d.date} x={LEFT + col * STEP} y={TOP + row * STEP} width={CELL} height={CELL} rx={2}
-        className={FILLS[bucket(d.minutes)]}>
+        className={FILLS[bucketOf(d)]}>
         <title>{`${date.toLocaleDateString('pt-BR')}: ${d.minutes} min`}</title>
       </rect>
     );
