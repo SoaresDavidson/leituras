@@ -208,3 +208,41 @@ describe('foco api', () => {
     await request(app).patch('/api/foco').send({ limite: 3 }).expect(401);
   });
 });
+
+describe('retrospectiva api', () => {
+  it('requires a session for retrospectiva routes', async () => {
+    await request(app).get('/api/retrospectiva').expect(401);
+    await request(app).get('/api/retrospectiva/periodo').expect(401);
+    await request(app).patch('/api/retrospectiva').send({ metaAnoPaginas: 1000 }).expect(401);
+  });
+
+  it('returns a period and rejects invalid tipo or offset', async () => {
+    const agent = await login();
+    const week = await agent.get('/api/retrospectiva/periodo').expect(200);
+    expect(week.body).toMatchObject({ tipo: 'semana', offset: 0 });
+    const month = await agent.get('/api/retrospectiva/periodo?tipo=mes&offset=2').expect(200);
+    expect(month.body).toMatchObject({ tipo: 'mes', offset: 2 });
+    for (const q of ['tipo=ano', 'offset=-1', 'offset=1.5', 'offset=abc', 'offset=521']) {
+      const res = await agent.get(`/api/retrospectiva/periodo?${q}`).expect(400);
+      expect(res.body.error).toBeTypeOf('string');
+    }
+  });
+
+  it('saves the yearly goal and rejects invalid values', async () => {
+    const agent = await login();
+    expect((await agent.get('/api/retrospectiva').expect(200)).body.meta.metaPaginas).toBe(6000);
+    for (const metaAnoPaginas of [99, 100_001, '1000', 1000.5, null]) {
+      await agent.patch('/api/retrospectiva').send({ metaAnoPaginas }).expect(400);
+    }
+    await agent.patch('/api/retrospectiva').send({}).expect(400);
+    const res = await agent.patch('/api/retrospectiva').send({ metaAnoPaginas: 3650 }).expect(200);
+    expect(res.body.meta.metaPaginas).toBe(3650);
+  });
+
+  it('keeps the yearly goal across plugin imports', async () => {
+    const agent = await login();
+    await agent.patch('/api/retrospectiva').send({ metaAnoPaginas: 1200 }).expect(200);
+    await sendImport({ books: [book], stats: pageStats(5) }).expect(200);
+    expect((await agent.get('/api/retrospectiva').expect(200)).body.meta.metaPaginas).toBe(1200);
+  });
+});

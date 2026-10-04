@@ -1,4 +1,4 @@
-import type { BookPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus } from '@leituras/shared';
+import type { BookPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus, RetroTipo } from '@leituras/shared';
 import express, { type Request, type Response } from 'express';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -9,6 +9,7 @@ import { coverPath, fetchMissingCovers } from './covers';
 import { dayKey } from './dates';
 import type { Db } from './db';
 import { getFoco, setFila, updateFocoSettings } from './foco';
+import { getRetroPeriodo, getRetrospectiva, MAX_OFFSET, updateRetroSettings } from './retrospectiva';
 
 const STATUSES: ReadingStatus[] = ['lendo', 'lido', 'pausado'];
 
@@ -34,6 +35,13 @@ function parseFocoPatch(body: unknown): { limite?: number; prazoDias?: number } 
   if (limite !== undefined && !isIntIn(limite, 1, 10)) return null;
   if (prazoDias !== undefined && !isIntIn(prazoDias, 7, 365)) return null;
   return { limite: limite as number | undefined, prazoDias: prazoDias as number | undefined };
+}
+
+function parseRetroQuery(query: Record<string, unknown>): { tipo: RetroTipo; offset: number } | null {
+  const tipo = query.tipo ?? 'semana';
+  const offset = query.offset === undefined ? 0 : typeof query.offset === 'string' && /^\d+$/.test(query.offset) ? Number(query.offset) : NaN;
+  if ((tipo !== 'semana' && tipo !== 'mes') || !isIntIn(offset, 0, MAX_OFFSET)) return null;
+  return { tipo, offset };
 }
 
 export function createApp(db: Db, config: Config, options: { fetchCovers?: boolean } = {}) {
@@ -133,6 +141,21 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     if (!patch) { res.status(400).json({ error: 'Ajustes inválidos' }); return; }
     updateFocoSettings(db, patch);
     res.json(currentFoco());
+  });
+
+  api.get('/retrospectiva', (_req, res) => { res.json(getRetrospectiva(db, config.timeZone)); });
+
+  api.get('/retrospectiva/periodo', (req, res) => {
+    const q = parseRetroQuery(req.query);
+    if (!q) { res.status(400).json({ error: 'Período inválido' }); return; }
+    res.json(getRetroPeriodo(db, q.tipo, q.offset, config.timeZone));
+  });
+
+  api.patch('/retrospectiva', (req, res) => {
+    const { metaAnoPaginas } = (req.body ?? {}) as { metaAnoPaginas?: unknown };
+    if (!isIntIn(metaAnoPaginas, 100, 100_000)) { res.status(400).json({ error: 'Meta inválida' }); return; }
+    updateRetroSettings(db, { metaAnoPaginas: metaAnoPaginas as number });
+    res.json(getRetrospectiva(db, config.timeZone));
   });
 
   api.get('/books/:md5/cover', (req, res) => {
