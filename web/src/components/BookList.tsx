@@ -17,7 +17,7 @@ export default function BookList<T extends BookSummary>({ books, badge }: { book
             <div className="min-w-0 flex-1 space-y-1">
               <div className="truncate font-medium">{b.title}</div>
               <div className="truncate muted">{b.authors}</div>
-              <ProgressBar value={b.progress} />
+              <ProgressBar value={b.progress} scale />
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
               <StatusBadge status={b.status} arquivado={b.arquivado} />

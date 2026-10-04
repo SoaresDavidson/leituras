@@ -264,7 +264,7 @@ export default function BookPage() {
             {extras.data?.anoPublicacao != null && <div className="text-sm">Publicado em {extras.data.anoPublicacao}</div>}
             {extras.isError && <div className="error">Erro ao carregar os dados extras do livro.</div>}
             <StatusBadge status={b.status} arquivado={b.arquivado} />
-            <ProgressBar value={b.progress} />
+            <ProgressBar value={b.progress} scale />
             <div className="text-sm">{Math.round(b.progress)}% de {b.pages} páginas</div>
             <div className="flex flex-wrap gap-2">
               <FocoActions book={b} />

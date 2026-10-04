@@ -52,7 +52,7 @@ function AbertoItem({ book }: { book: FocoBook }) {
         <Cover book={book} className="h-16 w-11" />
         <div className="min-w-0 flex-1 space-y-1">
           <div className="truncate font-medium">{book.title}</div>
-          <ProgressBar value={book.progress} />
+          <ProgressBar value={book.progress} scale />
           <div className="muted">
             {book.previsao ? `termina ~${fmtDate(book.previsao)}` : 'sem ritmo recente'}
             {book.minutosRestantes != null && (
