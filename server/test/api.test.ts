@@ -274,3 +274,48 @@ describe('habito api', () => {
     expect(res.body).toMatchObject({ metas: { dia: { minutos: 30 } }, gatilho: 'antes de dormir' });
   });
 });
+
+describe('retrospectiva api', () => {
+  it('requires a session for retrospectiva routes', async () => {
+    await request(app).get('/api/retrospectiva').expect(401);
+    await request(app).get('/api/retrospectiva/periodo').expect(401);
+    await request(app).patch('/api/retrospectiva').send({ metaAnoPaginas: 1000 }).expect(401);
+  });
+
+  it('returns a period and rejects invalid tipo or offset', async () => {
+    const agent = await login();
+    const week = await agent.get('/api/retrospectiva/periodo').expect(200);
+    expect(week.body).toMatchObject({ tipo: 'semana', offset: 0, melhorDia: null, maiorSessao: null, livros: [] });
+    expect(Object.keys(week.body).sort()).toEqual(['anterior', 'fim', 'inicio', 'livros', 'maiorSessao', 'melhorDia', 'offset', 'tipo', 'totais']);
+    expect(week.body.totais).toEqual({ minutos: 0, paginas: 0, diasLidos: 0, livrosTocados: 0, livrosTerminados: 0 });
+    expect(week.body.inicio).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const month = await agent.get('/api/retrospectiva/periodo?tipo=mes&offset=2').expect(200);
+    expect(month.body).toMatchObject({ tipo: 'mes', offset: 2 });
+    await agent.get('/api/retrospectiva/periodo?offset=520').expect(200);
+    for (const q of ['tipo=ano', 'offset=-1', 'offset=1.5', 'offset=abc', 'offset=521', 'tipo=semana&tipo=mes', 'offset=1&offset=2']) {
+      const res = await agent.get(`/api/retrospectiva/periodo?${q}`).expect(400);
+      expect(res.body.error).toBeTypeOf('string');
+    }
+  });
+
+  it('saves the yearly goal and rejects invalid values', async () => {
+    const agent = await login();
+    expect((await agent.get('/api/retrospectiva').expect(200)).body.meta.metaPaginas).toBe(6000);
+    for (const metaAnoPaginas of [99, 100_001, '1000', 1000.5, null, 0]) {
+      const res = await agent.patch('/api/retrospectiva').send({ metaAnoPaginas }).expect(400);
+      expect(res.body.error).toBe('Meta inválida');
+    }
+    await agent.patch('/api/retrospectiva').send({ metaAnoPaginas: 100 }).expect(200);
+    await agent.patch('/api/retrospectiva').send({ metaAnoPaginas: 100_000 }).expect(200);
+    await agent.patch('/api/retrospectiva').send({}).expect(400);
+    const res = await agent.patch('/api/retrospectiva').send({ metaAnoPaginas: 3650 }).expect(200);
+    expect(res.body.meta.metaPaginas).toBe(3650);
+  });
+
+  it('keeps the yearly goal across plugin imports', async () => {
+    const agent = await login();
+    await agent.patch('/api/retrospectiva').send({ metaAnoPaginas: 1200 }).expect(200);
+    await sendImport({ books: [book], stats: pageStats(5) }).expect(200);
+    expect((await agent.get('/api/retrospectiva').expect(200)).body.meta.metaPaginas).toBe(1200);
+  });
+});

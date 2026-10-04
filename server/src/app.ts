@@ -1,4 +1,4 @@
-import type { BookPatch, HabitoPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus } from '@leituras/shared';
+import type { BookPatch, HabitoPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus, RetroTipo } from '@leituras/shared';
 import express, { type Request, type Response } from 'express';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -13,6 +13,7 @@ import {
   applyMetadados, deleteBook, dropBlacklisted, fetchMetadados, getLivroExtras, getLivros, parseMetadadosPatch, removeFromBlacklist, setMaisTarde,
 } from './livros';
 import { GATILHO_MAX, getHabito, readHabitoSettings, updateHabitoSettings } from './habito';
+import { getRetroPeriodo, getRetrospectiva, MAX_OFFSET, updateRetroSettings } from './retrospectiva';
 
 const STATUSES: ReadingStatus[] = ['lendo', 'lido', 'pausado'];
 
@@ -66,6 +67,13 @@ function parseHabitoPatch(body: unknown, current: ReturnType<typeof readHabitoSe
   if ((patch.metaDiaMinutos ?? dia.minutos) === 0 && (patch.metaDiaPaginas ?? dia.paginas) === 0) return 'A meta diária precisa de minutos ou páginas';
   if ((patch.metaMesMinutos ?? mes.minutos) === 0 && (patch.metaMesPaginas ?? mes.paginas) === 0) return 'A meta mensal precisa de minutos ou páginas';
   return patch;
+}
+
+function parseRetroQuery(query: Record<string, unknown>): { tipo: RetroTipo; offset: number } | null {
+  const tipo = query.tipo ?? 'semana';
+  const offset = query.offset === undefined ? 0 : typeof query.offset === 'string' && /^\d+$/.test(query.offset) ? Number(query.offset) : NaN;
+  if ((tipo !== 'semana' && tipo !== 'mes') || !isIntIn(offset, 0, MAX_OFFSET)) return null;
+  return { tipo, offset };
 }
 
 export function createApp(db: Db, config: Config, options: { fetchCovers?: boolean; fetchFn?: typeof fetch } = {}) {
@@ -229,6 +237,22 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     if (typeof patch === 'string') { res.status(400).json({ error: patch }); return; }
     updateHabitoSettings(db, patch);
     res.json(getHabito(db, config.timeZone));
+  });
+
+  // ---- retrospectiva ----
+  api.get('/retrospectiva', (_req, res) => { res.json(getRetrospectiva(db, config.timeZone)); });
+
+  api.get('/retrospectiva/periodo', (req, res) => {
+    const q = parseRetroQuery(req.query);
+    if (!q) { res.status(400).json({ error: 'Período inválido' }); return; }
+    res.json(getRetroPeriodo(db, q.tipo, q.offset, config.timeZone));
+  });
+
+  api.patch('/retrospectiva', (req, res) => {
+    const { metaAnoPaginas } = (req.body ?? {}) as { metaAnoPaginas?: unknown };
+    if (!isIntIn(metaAnoPaginas, 100, 100_000)) { res.status(400).json({ error: 'Meta inválida' }); return; }
+    updateRetroSettings(db, { metaAnoPaginas: metaAnoPaginas as number });
+    res.json(getRetrospectiva(db, config.timeZone));
   });
 
   api.get('/books/:md5/cover', (req, res) => {

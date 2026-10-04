@@ -17,7 +17,7 @@ export type BookStats = {
 export const FINISHED_PROGRESS = 95;
 export const READING_WINDOW_DAYS = 30;
 // Page turns further apart than this start a new reading session
-const SESSION_GAP_SECONDS = 30 * 60;
+export const SESSION_GAP_SECONDS = 30 * 60;
 
 // KOReader page numbers depend on font/layout at read time, so each stat is
 // rescaled from its own total_pages to the book's current page count.

@@ -161,3 +161,43 @@ export type HabitoPatch = Partial<{
   metaMesPaginas: number;
   gatilho: string;
 }>;
+
+// ---- retrospectiva ----
+
+export type RetroTipo = 'semana' | 'mes';
+
+export type RetroTotais = { minutos: number; paginas: number; diasLidos: number; livrosTocados: number; livrosTerminados: number };
+
+export type RetroPeriodo = {
+  tipo: RetroTipo;
+  offset: number; // 0 = current period, 1 = previous, ...
+  inicio: string; // YYYY-MM-DD, inclusive
+  fim: string; // YYYY-MM-DD, inclusive
+  totais: RetroTotais;
+  anterior: RetroTotais & { inicio: string; fim: string };
+  melhorDia: { date: string; minutos: number } | null;
+  maiorSessao: { date: string; minutos: number; book: BookSummary } | null;
+  livros: { book: BookSummary; minutos: number; paginas: number; terminou: boolean }[]; // most minutes first
+};
+
+export type Equivalencia = { id: string; rotulo: string; quantidade: number };
+
+export type Investido = { minutos: number; paginas: number; equivalencias: Equivalencia[] };
+
+export type MetaAno = {
+  ano: number;
+  metaPaginas: number;
+  lidas: number;
+  restantes: number;
+  diasRestantes: number; // until Dec 31, today included
+  paginasPorDia: number;
+  esperadoHoje: number; // linear pace
+  diferenca: number; // lidas - esperadoHoje, positive = ahead
+};
+
+export type Retrospectiva = {
+  investimento: { total: Investido; anos: (Investido & { ano: number })[] }; // newest year first
+  meta: MetaAno;
+  ritmoLivros: { book: BookSummary; minutos: number; paginas: number; paginasPorHora: number }[]; // most recently read first
+  velocidadeMensal: { month: string; paginasPorHora: number | null }[]; // YYYY-MM, oldest first
+};
