@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx --env-file-if-exists=../.env watch src/main.ts",
+    "dev": "tsx watch --env-file-if-exists=../.env src/main.ts",
     "build": "esbuild src/main.ts src/cli.ts --bundle --platform=node --format=esm --packages=external --outdir=dist",
     "start": "node --env-file-if-exists=../.env dist/main.js",
     "test": "vitest run",
     "typecheck": "tsc -p .",
-    "set-password": "tsx --env-file-if-exists=../.env src/cli.ts set-password"
+    "set-password": "tsx --env-file-if-exists=../.env src/cli.ts set-password",
+    "seed": "tsx --env-file-if-exists=../.env src/cli.ts seed"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

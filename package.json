@@ -11,7 +11,8 @@
     "build": "npm run build --workspace=web && npm run build --workspace=server",
     "test": "npm test --workspace=server",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "set-password": "npm run set-password --workspace=server --"
+    "set-password": "npm run set-password --workspace=server --",
+    "seed": "npm run seed --workspace=server"
   },
   "allowScripts": {
     "better-sqlite3@12.11.1": true,

@@ -5,6 +5,7 @@ import { createInterface } from 'node:readline/promises';
 import { setPassword } from './auth';
 import { loadConfig } from './config';
 import { openDb } from './db';
+import { seed } from './seed';
 
 const config = loadConfig();
 const [command] = process.argv.slice(2);
@@ -22,7 +23,20 @@ if (command === 'set-password') {
   await setPassword(db, password);
   db.close();
   console.info('Senha definida. Sessões abertas foram encerradas.');
+} else if (command === 'seed') {
+  mkdirSync(config.dataPath, { recursive: true });
+  const file = path.join(config.dataPath, 'leituras.sqlite3');
+  const db = openDb(file);
+  try {
+    const { books, stats } = seed(db);
+    console.info(`Seed em ${file}: ${books} livros, ${stats} registros de página.`);
+  } catch (err) {
+    console.error((err as Error).message);
+    process.exitCode = 1;
+  } finally {
+    db.close();
+  }
 } else {
-  console.error('Uso: cli.ts set-password');
+  console.error('Uso: cli.ts set-password | seed');
   process.exit(1);
 }
