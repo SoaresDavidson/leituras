@@ -2,11 +2,11 @@ import { useEffect, useRef } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { logout } from '../api';
+import RetroStory, { useRetroAuto } from './RetroStory';
 
 const LINKS: [string, string][] = [
   ['/', 'Painel'],
   ['/habito', 'Hábito'],
-  ['/retrospectiva', 'Retrospectiva'],
   ['/conquistas', 'Conquistas'],
   ['/livros', 'Livros'],
   ['/configuracoes', 'Configurações'],
@@ -17,6 +17,7 @@ export default function Layout() {
   const qc = useQueryClient();
   const { pathname } = useLocation();
   const navRef = useRef<HTMLElement>(null);
+  const [retro, setRetro] = useRetroAuto();
   // On narrow screens the nav is a scrolling strip: keep the current page visible in it
   useEffect(() => {
     navRef.current?.querySelector('[aria-current=page]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
@@ -40,6 +41,7 @@ export default function Layout() {
             {LINKS.map(([to, label]) => (
               <NavLink key={to} to={to} end={to === '/'} className="nav-link shrink-0 whitespace-nowrap">{label}</NavLink>
             ))}
+            <button onClick={() => setRetro(true)} className="nav-link shrink-0 whitespace-nowrap">Retrospectiva</button>
           </nav>
           <button onClick={out} className="btn ml-auto">Sair</button>
         </div>
@@ -49,6 +51,7 @@ export default function Layout() {
           <Outlet />
         </div>
       </main>
+      <RetroStory open={retro} onClose={() => setRetro(false)} />
     </>
   );
 }

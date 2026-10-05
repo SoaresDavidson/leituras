@@ -73,6 +73,21 @@
   }
 }
 
+/* ---- retrospectiva story ---- */
+@layer components {
+  /* one warm light from the top-left over the story card, same source as the page glow */
+  .story-surface {
+    background:
+      radial-gradient(28rem 22rem at 0% 0%, color-mix(in oklch, var(--accent) 22%, transparent), transparent 70%),
+      radial-gradient(24rem 18rem at 100% 100%, color-mix(in oklch, var(--accent) 9%, transparent), transparent 70%),
+      var(--surface);
+  }
+  .story-bar { @apply h-full w-full origin-left; animation: story-bar linear forwards; }
+  .story-in { animation: enter 420ms cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i, 0) * 90ms + 60ms); }
+}
+@keyframes story-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+html:has(dialog[open]) { overflow: hidden; }
+
 /* ---- motion ---- */
 @keyframes enter {
   from { opacity: 0; transform: translateY(6px); }
