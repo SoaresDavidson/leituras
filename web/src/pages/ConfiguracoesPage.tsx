@@ -1,7 +1,51 @@
+import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { PainelConfig, PainelItem } from '@leituras/shared';
-import { ApiError, getPainelConfig, patchPainelConfig, resetPainelConfig } from '../api';
+import type { MetaAno, PainelConfig, PainelItem } from '@leituras/shared';
+import { ApiError, getPainelConfig, getRetrospectiva, patchPainelConfig, patchRetrospectiva, resetPainelConfig } from '../api';
 import { Card } from '../components/Card';
+import { SkeletonLines } from '../components/Skeleton';
+
+const META_MIN = 100;
+const META_MAX = 100_000;
+
+// The yearly goal is shown in the monthly Retrospectiva; it is set here
+function MetaForm({ meta }: { meta: MetaAno }) {
+  const [valor, setValor] = useState(String(meta.metaPaginas));
+  const [invalido, setInvalido] = useState(false);
+  const qc = useQueryClient();
+  const save = useMutation({ mutationFn: patchRetrospectiva, onSuccess: (novo) => qc.setQueryData(['retrospectiva'], novo) });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const n = Number(valor.trim());
+    if (!/^\d+$/.test(valor.trim()) || n < META_MIN || n > META_MAX) { setInvalido(true); return; }
+    save.mutate({ metaAnoPaginas: n });
+  };
+  const change = (v: string) => { setValor(v); setInvalido(false); save.reset(); };
+  const erro = invalido ? 'Use um número inteiro entre 100 e 100.000.' : save.isError ? (save.error as Error).message : null;
+  return (
+    <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+      <label className="block">Páginas em {meta.ano}
+        <input type="number" inputMode="numeric" min={META_MIN} max={META_MAX} step={100} value={valor} onChange={(e) => change(e.target.value)}
+          className="input mt-1 block w-32" />
+      </label>
+      <button disabled={save.isPending} className="btn-primary">Salvar</button>
+      {save.isSuccess && <span role="status" className="success">Meta salva.</span>}
+      {erro && <span role="alert" className="error">{erro}</span>}
+    </form>
+  );
+}
+
+function MetaCard() {
+  const q = useQuery({ queryKey: ['retrospectiva'], queryFn: getRetrospectiva });
+  return (
+    <Card title="Meta do ano">
+      <p className="muted mb-3">O progresso aparece na Retrospectiva, que abre sozinha todo dia 25.</p>
+      {q.isLoading && <SkeletonLines rows={2} />}
+      {q.isError && <p className="error">Não foi possível carregar a meta.</p>}
+      {q.data && <MetaForm meta={q.data.meta} />}
+    </Card>
+  );
+}
 
 export const PAINEL_LABELS: Record<PainelItem, string> = {
   foco: 'Foco',
@@ -58,6 +102,7 @@ export default function ConfiguracoesPage() {
           </button>
         </div>
       </Card>
+      <MetaCard />
     </>
   );
 }
