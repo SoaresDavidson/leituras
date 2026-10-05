@@ -7,7 +7,6 @@ const LINKS: [string, string][] = [
   ['/', 'Painel'],
   ['/habito', 'Hábito'],
   ['/retrospectiva', 'Retrospectiva'],
-  ['/aprendizado', 'Aprendizado'],
   ['/conquistas', 'Conquistas'],
   ['/livros', 'Livros'],
   ['/configuracoes', 'Configurações'],

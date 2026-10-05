@@ -1,6 +1,5 @@
 import type { BookPatch, HabitoPatch, PluginDevicePayload, PluginImportPayload, ReadingStatus, RetroTipo, TipoLivro } from '@leituras/shared';
 import express, { type Request, type Response } from 'express';
-import { addNota, deleteNota, getAprendizado, getLivroAprendizado, revisarNota, setArea, setTrilhaItem } from './aprendizado';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { checkPassword, createSession, destroySession, loginRateLimit, requireSession } from './auth';
@@ -41,20 +40,6 @@ function parsePatch(body: unknown): BookPatch | null {
 }
 
 const isIntIn = (v: unknown, min: number, max: number) => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;
-
-const MAX_NOTA = 2000;
-
-// Note ids come from the URL; anything that is not a positive integer is an unknown note
-const parseId = (raw: string) => (/^\d+$/.test(raw) ? Number(raw) : null);
-
-function parseNota(body: unknown): { md5: string; texto: string } | null {
-  if (typeof body !== 'object' || body === null) return null;
-  const { md5, texto } = body as Record<string, unknown>;
-  if (typeof md5 !== 'string' || typeof texto !== 'string') return null;
-  const trimmed = texto.trim();
-  if (trimmed.length === 0 || trimmed.length > MAX_NOTA) return null;
-  return { md5, texto: trimmed };
-}
 
 function parseFocoPatch(body: unknown): { limite?: number; prazoDias?: number } | null {
   if (typeof body !== 'object' || body === null) return null;
@@ -290,60 +275,6 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
     if (!isIntIn(metaAnoPaginas, 100, 100_000)) { res.status(400).json({ error: 'Meta inválida' }); return; }
     updateRetroSettings(db, { metaAnoPaginas: metaAnoPaginas as number });
     res.json(getRetrospectiva(db, config.timeZone));
-  });
-
-  // ---- aprendizado ----
-  api.get('/aprendizado', (_req, res) => { res.json(getAprendizado(db, config.timeZone)); });
-
-  api.get('/aprendizado/livros/:md5', (req, res) => {
-    const livro = getLivroAprendizado(db, req.params.md5);
-    if (!livro) { res.status(404).json({ error: 'Livro não encontrado' }); return; }
-    res.json(livro);
-  });
-
-  api.put('/aprendizado/livros/:md5/area', (req, res) => {
-    const { area } = (req.body ?? {}) as { area?: unknown };
-    if (area !== null && typeof area !== 'string') { res.status(400).json({ error: 'Área inválida' }); return; }
-    const result = setArea(db, req.params.md5, area);
-    if (result === 'invalid') { res.status(400).json({ error: 'Área inválida' }); return; }
-    if (result === 'not-found') { res.status(404).json({ error: 'Livro não encontrado' }); return; }
-    res.json(getLivroAprendizado(db, req.params.md5));
-  });
-
-  api.post('/aprendizado/notas', (req, res) => {
-    const input = parseNota(req.body);
-    if (!input) { res.status(400).json({ error: `Escreva o aprendizado (até ${MAX_NOTA} caracteres)` }); return; }
-    const nota = addNota(db, input.md5, input.texto, today());
-    if (!nota) { res.status(404).json({ error: 'Livro não encontrado' }); return; }
-    res.status(201).json(nota);
-  });
-
-  api.delete('/aprendizado/notas/:id', (req, res) => {
-    const id = parseId(req.params.id);
-    if (id == null || !deleteNota(db, id)) { res.status(404).json({ error: 'Aprendizado não encontrado' }); return; }
-    res.status(204).end();
-  });
-
-  api.post('/aprendizado/notas/:id/revisao', (req, res) => {
-    const { lembrei } = (req.body ?? {}) as { lembrei?: unknown };
-    const id = parseId(req.params.id);
-    if (id == null) { res.status(404).json({ error: 'Aprendizado não encontrado' }); return; }
-    if (typeof lembrei !== 'boolean') { res.status(400).json({ error: 'Resposta inválida' }); return; }
-    const nota = revisarNota(db, id, lembrei, today());
-    if (!nota) { res.status(404).json({ error: 'Aprendizado não encontrado' }); return; }
-    res.json(nota);
-  });
-
-  api.put('/aprendizado/trilhas/:trilha/itens/:item', (req, res) => {
-    const { trilha, item } = req.params;
-    const { md5s } = (req.body ?? {}) as { md5s?: unknown };
-    if (!Array.isArray(md5s) || !md5s.every((m) => typeof m === 'string')) { res.status(400).json({ error: 'Lista de livros inválida' }); return; }
-    const result = setTrilhaItem(db, trilha, item, md5s);
-    if (result === 'not-found') { res.status(404).json({ error: 'Item de trilha não encontrado' }); return; }
-    if (result === 'unknown') { res.status(400).json({ error: 'Livro não encontrado' }); return; }
-    if (result === 'duplicate') { res.status(400).json({ error: 'Livro repetido no item' }); return; }
-    if (result === 'ficcao') { res.status(400).json({ error: 'Livros de ficção não entram em trilhas' }); return; }
-    res.json(getAprendizado(db, config.timeZone).trilhas.find((t) => t.id === trilha));
   });
 
   // ---- jogo ----

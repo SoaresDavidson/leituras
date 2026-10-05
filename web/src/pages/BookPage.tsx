@@ -11,7 +11,6 @@ import { Card } from '../components/Card';
 import Cover from '../components/Cover';
 import ProgressBar from '../components/ProgressBar';
 import StatusBadge from '../components/StatusBadge';
-import AprendizadoLivro from '../components/AprendizadoLivro';
 import { SkeletonCards } from '../components/Skeleton';
 
 function EditForm({ book }: { book: BookDetail }) {
@@ -67,7 +66,6 @@ function TipoSelector({ book }: { book: BookDetail }) {
     onSuccess: (updated) => {
       qc.setQueryData(['book', book.md5], updated);
       qc.invalidateQueries({ queryKey: ['books'] });
-      qc.invalidateQueries({ queryKey: ['aprendizado'] });
     },
   });
   const opcoes: [TipoLivro, string][] = [['estudo', 'Estudo'], ['ficcao', 'Ficção']];
@@ -351,8 +349,6 @@ export default function BookPage() {
           </ResponsiveContainer>
         </div>
       </Card>
-      {/* fiction has no aprendizado; its notes stay stored and return if the book goes back to estudo */}
-      {b.tipo !== 'ficcao' && <AprendizadoLivro book={b} />}
       <Card title="Anotações"><EditForm book={b} /></Card>
       <MetadadosCard book={b} />
       <ExcluirLivro book={b} />

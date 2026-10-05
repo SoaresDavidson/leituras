@@ -1,6 +1,6 @@
 import type {
-  Aprendizado, BookDetail, BookPatch, BookSummary, BuscaMetadados, Dashboard, Foco, Habito, HabitoPatch, Jogo, LivroAprendizado, LivroExtras,
-  Livros, MetadadosPatch, Nota, PainelConfig, PainelConfigPatch, RetroPeriodo, RetroTipo, Retrospectiva, TrilhaProgresso,
+  BookDetail, BookPatch, BookSummary, BuscaMetadados, Dashboard, Foco, Habito, HabitoPatch, Jogo, LivroExtras,
+  Livros, MetadadosPatch, PainelConfig, PainelConfigPatch, RetroPeriodo, RetroTipo, Retrospectiva,
 } from '@leituras/shared';
 
 export class ApiError extends Error {
@@ -58,18 +58,5 @@ export const getRetroPeriodo = (tipo: RetroTipo, offset: number) =>
   req<RetroPeriodo>(`/retrospectiva/periodo?tipo=${tipo}&offset=${offset}`);
 export const patchRetrospectiva = (patch: { metaAnoPaginas: number }) =>
   req<Retrospectiva>('/retrospectiva', { method: 'PATCH', body: JSON.stringify(patch) });
-
-// ---- aprendizado ----
-export const getAprendizado = () => req<Aprendizado>('/aprendizado');
-export const getLivroAprendizado = (md5: string) => req<LivroAprendizado>(`/aprendizado/livros/${md5}`);
-export const putArea = (md5: string, area: string | null) =>
-  req<LivroAprendizado>(`/aprendizado/livros/${md5}/area`, { method: 'PUT', body: JSON.stringify({ area }) });
-export const postNota = (md5: string, texto: string) =>
-  req<Nota>('/aprendizado/notas', { method: 'POST', body: JSON.stringify({ md5, texto }) });
-export const deleteNota = (id: number) => req<void>(`/aprendizado/notas/${id}`, { method: 'DELETE' });
-export const revisarNota = (id: number, lembrei: boolean) =>
-  req<Nota>(`/aprendizado/notas/${id}/revisao`, { method: 'POST', body: JSON.stringify({ lembrei }) });
-export const putTrilhaItem = (trilha: string, item: string, md5s: string[]) =>
-  req<TrilhaProgresso>(`/aprendizado/trilhas/${trilha}/itens/${item}`, { method: 'PUT', body: JSON.stringify({ md5s }) });
 export const getJogo = () => req<Jogo>('/jogo');
 export const trocarCarta = () => req<Jogo>('/jogo/carta/trocar', { method: 'POST' });

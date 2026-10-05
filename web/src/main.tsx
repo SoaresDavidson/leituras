@@ -10,7 +10,6 @@ import BookPage from './pages/BookPage';
 import HabitoPage from './pages/HabitoPage';
 import LivrosPage from './pages/LivrosPage';
 import RetrospectivaPage from './pages/RetrospectivaPage';
-import AprendizadoPage from './pages/AprendizadoPage';
 import ConquistasPage from './pages/ConquistasPage';
 import ConfiguracoesPage from './pages/ConfiguracoesPage';
 
@@ -28,7 +27,6 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/livros/:md5" element={<BookPage />} />
             <Route path="/habito" element={<HabitoPage />} />
             <Route path="/retrospectiva" element={<RetrospectivaPage />} />
-            <Route path="/aprendizado" element={<AprendizadoPage />} />
             <Route path="/conquistas" element={<ConquistasPage />} />
             <Route path="/configuracoes" element={<ConfiguracoesPage />} />
           </Route>

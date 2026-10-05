@@ -53,7 +53,7 @@ export type BookSummary = {
   status: ReadingStatus; // effective status (status_manual wins)
   statusManual: ReadingStatus | null;
   categoria: string;
-  tipo: TipoLivro | null; // ficcao hides the book from aprendizado
+  tipo: TipoLivro | null; // fiction vs. study
   startedAt: string | null; // YYYY-MM-DD
   finishedAt: string | null; // YYYY-MM-DD
   lastReadAt: string | null; // YYYY-MM-DD, any recorded page
@@ -222,52 +222,6 @@ export type Retrospectiva = {
   meta: MetaAno;
   ritmoLivros: { book: BookSummary; minutos: number; paginas: number; paginasPorHora: number }[]; // most recently read first
   velocidadeMensal: { month: string; paginasPorHora: number | null }[]; // YYYY-MM, oldest first
-};
-
-// ---- aprendizado ----
-
-export type Nota = {
-  id: number;
-  md5: string;
-  bookTitle: string;
-  texto: string;
-  criadoEm: string; // YYYY-MM-DD
-  etapa: number; // index into the review intervals
-  proximaRevisao: string; // YYYY-MM-DD
-  revisadoEm: string | null; // YYYY-MM-DD
-};
-
-export type NoArvore = {
-  id: string;
-  nome: string;
-  nivel: number; // 0-5
-  minutos: number;
-  livrosLidos: number;
-  filhos: NoArvore[]; // empty for leaves; roots include their children's totals
-};
-
-export type TrilhaProgresso = {
-  id: string;
-  nome: string;
-  progresso: number; // 0-100, share of items with a finished book
-  itens: { id: string; nome: string; estado: 'vazio' | 'andamento' | 'feito'; livros: { md5: string; title: string; status: ReadingStatus }[] }[];
-};
-
-export type Aprendizado = {
-  hoje: string; // YYYY-MM-DD
-  notas: Nota[]; // journal, newest first
-  revisarHoje: Nota[]; // due notes, most overdue first
-  ferrugem: { area: string; dias: number; ferrugem: number; ultimaAtividade: string }[]; // area = categoria; ferrugem 0-100, rustiest first
-  arvore: NoArvore[];
-  trilhas: TrilhaProgresso[];
-  lacunas: { id: string; nome: string; minutos: number; coberta: boolean }[]; // ACM CS2013 subset, in base order
-  topicos: { topico: string; minutos: number; livros: number }[]; // heaviest first
-};
-
-export type LivroAprendizado = {
-  area: string | null; // skill tree node id
-  notas: Nota[]; // newest first
-  arvore: { id: string; nome: string; filhos: { id: string; nome: string }[] }[]; // skill tree nodes, for the picker
 };
 
 // ---- jogo ----
