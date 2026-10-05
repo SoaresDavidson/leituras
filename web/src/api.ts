@@ -1,6 +1,6 @@
 import type {
-  Aprendizado, BookDetail, BookPatch, BookSummary, Dashboard, Foco, Habito, HabitoPatch, Jogo, LivroAprendizado, LivroExtras,
-  Livros, Metadados, MetadadosPatch, Nota, PainelConfig, PainelConfigPatch, RetroPeriodo, RetroTipo, Retrospectiva, TrilhaProgresso,
+  Aprendizado, BookDetail, BookPatch, BookSummary, BuscaMetadados, Dashboard, Foco, Habito, HabitoPatch, Jogo, LivroAprendizado, LivroExtras,
+  Livros, MetadadosPatch, Nota, PainelConfig, PainelConfigPatch, RetroPeriodo, RetroTipo, Retrospectiva, TrilhaProgresso,
 } from '@leituras/shared';
 
 export class ApiError extends Error {
@@ -50,7 +50,7 @@ export const putMaisTarde = (md5: string, maisTarde: boolean) =>
   req<LivroExtras>(`/livros/${md5}/mais-tarde`, { method: 'PUT', body: JSON.stringify({ maisTarde }) });
 export const deleteLivro = (md5: string) => req<Livros>(`/livros/${md5}`, { method: 'DELETE' });
 export const restoreLivro = (md5: string) => req<Livros>(`/livros/blacklist/${md5}`, { method: 'DELETE' });
-export const buscarMetadados = (md5: string) => req<{ resultado: Metadados | null }>(`/livros/${md5}/metadados`);
+export const buscarMetadados = (md5: string) => req<BuscaMetadados>(`/livros/${md5}/metadados`);
 export const aplicarMetadados = (md5: string, patch: MetadadosPatch) =>
   req<LivroExtras>(`/livros/${md5}/metadados`, { method: 'POST', body: JSON.stringify(patch) });
 export const getRetrospectiva = () => req<Retrospectiva>('/retrospectiva');

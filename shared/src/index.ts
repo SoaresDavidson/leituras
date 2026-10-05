@@ -115,8 +115,24 @@ export type Livros = {
 
 export type LivroExtras = { maisTarde: boolean; anoPublicacao: number | null };
 
-// One Open Library search hit; autores is newline-separated like book.authors
+// One search hit from a metadata source; autores is newline-separated like book.authors
 export type Metadados = { titulo: string; autores: string; paginas: number | null; anoPublicacao: number | null; assuntos: string[] };
+
+export type FonteMetadados = 'google' | 'hardcover' | 'openlibrary';
+
+// A candidate value and every source that returned it
+export type OpcaoMetadados<T> = { valor: T; fontes: FonteMetadados[] };
+
+// Up to MAX_OPCOES candidates per field, best first
+export type OpcoesMetadados = {
+  autores: OpcaoMetadados<string>[];
+  paginas: OpcaoMetadados<number>[];
+  anoPublicacao: OpcaoMetadados<number>[];
+  assuntos: OpcaoMetadados<string[]>[];
+};
+
+// opcoes is null when no source found the book; falhas lists sources that errored
+export type BuscaMetadados = { opcoes: OpcoesMetadados | null; falhas: FonteMetadados[] };
 
 export type MetadadosPatch = Partial<{ authors: string; pages: number; anoPublicacao: number; assuntos: string[] }>;
 

@@ -1,11 +1,10 @@
-import type { BlacklistEntry, LivroExtras, Livros, Metadados, MetadadosPatch, PluginBook, PluginPageStat } from '@leituras/shared';
+import type { BlacklistEntry, LivroExtras, Livros, MetadadosPatch, PluginBook, PluginPageStat } from '@leituras/shared';
 import { rm } from 'node:fs/promises';
 import { listBooks } from './books';
 import { coverPath } from './covers';
 import type { Db } from './db';
+import { isObject } from './normalizar';
 
-const METADATA_TIMEOUT_MS = 8000;
-const MAX_ASSUNTOS = 8;
 const MAX_ASSUNTOS_PATCH = 50;
 const MAX_ASSUNTO_LEN = 200;
 
@@ -54,43 +53,12 @@ export function removeFromBlacklist(db: Db, md5: string): boolean {
   return db.prepare('DELETE FROM blacklist WHERE md5 = ?').run(md5).changes > 0;
 }
 
-const isObject = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
-
 // Returns null when an item is not an object (the route answers 400)
 export function dropBlacklisted(db: Db, books: PluginBook[], stats: PluginPageStat[]): { books: PluginBook[]; stats: PluginPageStat[] } | null {
   if (!books.every(isObject) || !stats.every(isObject)) return null;
   const blocked = new Set((db.prepare('SELECT md5 FROM blacklist').all() as { md5: string }[]).map((r) => r.md5));
   if (blocked.size === 0) return { books, stats };
   return { books: books.filter((b) => !blocked.has(b.md5)), stats: stats.filter((s) => !blocked.has(s.book_md5)) };
-}
-
-const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim() !== '') : []);
-const positiveInt = (v: unknown) => (Number.isInteger(v) && (v as number) > 0 ? (v as number) : null);
-
-// Open Library lookup by title and first author; throws on network error, timeout or non-2xx
-export async function fetchMetadados(db: Db, md5: string, fetchFn: typeof fetch = fetch): Promise<Metadados | null | undefined> {
-  const book = db.prepare('SELECT title, authors FROM book WHERE md5 = ?').get(md5) as { title: string; authors: string } | undefined;
-  if (!book) return undefined;
-  const params = new URLSearchParams({
-    title: book.title,
-    limit: '1',
-    fields: 'title,author_name,number_of_pages_median,first_publish_year,subject',
-  });
-  if (book.authors) params.set('author', book.authors.split('\n')[0]);
-  const res = await fetchFn(`https://openlibrary.org/search.json?${params}`, { signal: AbortSignal.timeout(METADATA_TIMEOUT_MS) });
-  if (!res.ok) throw new Error(`Open Library HTTP ${res.status}`);
-  // Malformed fields are dropped, never trusted
-  const docs = ((await res.json()) as { docs?: unknown } | null)?.docs;
-  const doc = Array.isArray(docs) ? docs[0] : undefined;
-  if (!isObject(doc)) return null;
-  const d = doc as Record<string, unknown>;
-  return {
-    titulo: typeof d.title === 'string' ? d.title : '',
-    autores: strings(d.author_name).join('\n'),
-    paginas: positiveInt(d.number_of_pages_median),
-    anoPublicacao: positiveInt(d.first_publish_year),
-    assuntos: strings(d.subject).slice(0, MAX_ASSUNTOS),
-  };
 }
 
 const isIntIn = (v: unknown, min: number, max: number) => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;

@@ -5,6 +5,7 @@ const fakeFetch = (body: unknown, init?: ResponseInit) => vi.fn(async (_url: str
 const asFetch = (f: ReturnType<typeof fakeFetch>) => f as unknown as typeof fetch;
 const item = (volumeInfo: unknown) => ({ items: [{ volumeInfo }] });
 const lookup = (body: unknown) => fetchGoogleBooks({ title: 'x' }, 'k', asFetch(fakeFetch(body)));
+const first = async (body: unknown) => (await lookup(body))[0];
 
 describe('fetchGoogleBooks', () => {
   it('builds the request from title and author and sends the key', async () => {
@@ -14,7 +15,7 @@ describe('fetchGoogleBooks', () => {
     const u = new URL(url);
     expect(u.origin + u.pathname).toBe('https://www.googleapis.com/books/v1/volumes');
     expect(u.searchParams.get('q')).toBe('Duna inauthor:Frank Herbert');
-    expect(u.searchParams.get('maxResults')).toBe('1');
+    expect(u.searchParams.get('maxResults')).toBe('5');
     expect(u.searchParams.get('key')).toBe('k3y');
     expect(u.searchParams.get('fields')).toContain('volumeInfo');
     expect(init?.signal).toBeInstanceOf(AbortSignal);
@@ -26,8 +27,8 @@ describe('fetchGoogleBooks', () => {
     expect(new URL(f.mock.calls[0][0]).searchParams.get('q')).toBe('Duna');
   });
 
-  it('normalizes the first volume', async () => {
-    expect(await lookup(item({
+  it('normalizes each volume', async () => {
+    expect(await first(item({
       title: 'Duna', authors: ['Frank Herbert', 'Outro'], pageCount: 412, publishedDate: '2008-05-01',
       categories: [' Ficção ', 'Desertos', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
     }))).toEqual({
@@ -37,18 +38,23 @@ describe('fetchGoogleBooks', () => {
   });
 
   it('accepts a bare year', async () => {
-    expect((await lookup(item({ publishedDate: '1899' })))?.anoPublicacao).toBe(1899);
+    expect((await first(item({ publishedDate: '1899' }))).anoPublicacao).toBe(1899);
   });
 
   it('drops malformed fields', async () => {
-    expect(await lookup(item({ title: 42, authors: 'Frank', pageCount: -3, publishedDate: 1965, categories: { a: 1 } })))
+    expect(await first(item({ title: 42, authors: 'Frank', pageCount: -3, publishedDate: 1965, categories: { a: 1 } })))
       .toEqual({ titulo: '', autores: '', paginas: null, anoPublicacao: null, assuntos: [] });
-    expect(await lookup(item({ title: 'Duna', authors: ['F', 7, ''], pageCount: 1.5, publishedDate: '19x5', categories: ['P', null, ' '] })))
+    expect(await first(item({ title: 'Duna', authors: ['F', 7, ''], pageCount: 1.5, publishedDate: '19x5', categories: ['P', null, ' '] })))
       .toEqual({ titulo: 'Duna', autores: 'F', paginas: null, anoPublicacao: null, assuntos: ['P'] });
   });
 
-  it('returns null when there are no items', async () => {
-    for (const body of [{}, { items: [] }, { items: 'nope' }, item('nope')]) expect(await lookup(body)).toBeNull();
+  it('keeps every volume in order and skips malformed ones', async () => {
+    expect((await lookup({ items: [{ volumeInfo: { title: 'A' } }, 'x', { volumeInfo: 3 }, { volumeInfo: { title: 'B' } }] })).map((m) => m.titulo))
+      .toEqual(['A', 'B']);
+  });
+
+  it('returns an empty list when there are no items', async () => {
+    for (const body of [{}, { items: [] }, { items: 'nope' }, item('nope'), null]) expect(await lookup(body)).toEqual([]);
   });
 
   it('throws on non-2xx without leaking the key or URL', async () => {

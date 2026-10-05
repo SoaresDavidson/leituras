@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { BookDetail, Metadados, MetadadosPatch, TipoLivro } from '@leituras/shared';
+import type { BookDetail, FonteMetadados, MetadadosPatch, OpcoesMetadados, TipoLivro } from '@leituras/shared';
 import { ApiError, aplicarMetadados, buscarMetadados, deleteLivro, getBook, getDashboard, getLivroExtras, patchBook, putFila, putMaisTarde } from '../api';
 import { CHART, tooltipStyle } from '../styles/chart';
 import { fmtDate, fmtHours } from '../format';
@@ -146,45 +146,57 @@ function MaisTardeButton({ md5 }: { md5: string }) {
 
 type Campo = 'authors' | 'pages' | 'anoPublicacao' | 'assuntos';
 
+const FONTES: Record<FonteMetadados, string> = { google: 'Google Books', hardcover: 'Hardcover', openlibrary: 'Open Library' };
+const nomesFontes = (fontes: FonteMetadados[]) => fontes.map((f) => FONTES[f]).join(', ');
+
+type GrupoCampo = { key: Campo; label: string; opcoes: { texto: string; fontes: FonteMetadados[]; patch: MetadadosPatch }[] };
+
 function MetadadosCard({ book }: { book: BookDetail }) {
   const refresh = useRefreshLivro(book.md5);
-  const [marcados, setMarcados] = useState<Set<Campo>>(new Set());
+  // Index of the chosen option per field; a missing field is left untouched
+  const [escolhas, setEscolhas] = useState<Partial<Record<Campo, number>>>({});
   const busca = useMutation({
     mutationFn: () => buscarMetadados(book.md5),
     onMutate: () => aplicar.reset(),
-    onSuccess: ({ resultado }) => setMarcados(new Set(resultado
-      ? campos(resultado).map((c) => c.key).filter((k) => k !== 'pages' || book.pages === 0)
-      : [])),
+    // Best option preselected; pages only when KOReader reported none
+    onSuccess: ({ opcoes }) => setEscolhas(Object.fromEntries((opcoes ? grupos(opcoes) : [])
+      .filter((g) => g.key !== 'pages' || book.pages === 0)
+      .map((g) => [g.key, 0]))),
   });
   const aplicar = useMutation({
     mutationFn: (patch: MetadadosPatch) => aplicarMetadados(book.md5, patch),
     onSuccess: () => { refresh(); busca.reset(); },
   });
 
-  // Pages can override what KOReader reported; preselected only when it reported none
-  const campos = (m: Metadados) => [
-    m.autores && m.autores !== book.authors && { key: 'authors' as const, label: 'Autores', value: m.autores.replace(/\n/g, ', ') },
-    m.paginas && m.paginas !== book.pages && { key: 'pages' as const, label: book.pages > 0 ? `Páginas (hoje ${book.pages})` : 'Páginas', value: String(m.paginas) },
-    m.anoPublicacao && { key: 'anoPublicacao' as const, label: 'Ano de publicação', value: String(m.anoPublicacao) },
-    m.assuntos.length > 0 && { key: 'assuntos' as const, label: 'Assuntos (vão para os tópicos)', value: m.assuntos.join(', ') },
-  ].filter((c) => !!c);
+  // Values equal to what the book already has are not offered
+  const grupos = (o: OpcoesMetadados): GrupoCampo[] => [
+    {
+      key: 'authors' as const, label: 'Autores',
+      opcoes: o.autores.filter((x) => x.valor !== book.authors)
+        .map((x) => ({ texto: x.valor.replace(/\n/g, ', '), fontes: x.fontes, patch: { authors: x.valor } })),
+    },
+    {
+      key: 'pages' as const, label: book.pages > 0 ? `Páginas (hoje ${book.pages})` : 'Páginas',
+      opcoes: o.paginas.filter((x) => x.valor !== book.pages)
+        .map((x) => ({ texto: String(x.valor), fontes: x.fontes, patch: { pages: x.valor } })),
+    },
+    {
+      key: 'anoPublicacao' as const, label: 'Ano de publicação',
+      opcoes: o.anoPublicacao.map((x) => ({ texto: String(x.valor), fontes: x.fontes, patch: { anoPublicacao: x.valor } })),
+    },
+    {
+      key: 'assuntos' as const, label: 'Assuntos (vão para os tópicos)',
+      opcoes: o.assuntos.map((x) => ({ texto: x.valor.join(', '), fontes: x.fontes, patch: { assuntos: x.valor } })),
+    },
+  ].filter((g) => g.opcoes.length > 0);
 
-  const submit = (m: Metadados) => {
-    const patch: MetadadosPatch = {};
-    if (marcados.has('authors')) patch.authors = m.autores;
-    if (marcados.has('pages')) patch.pages = m.paginas!;
-    if (marcados.has('anoPublicacao')) patch.anoPublicacao = m.anoPublicacao!;
-    if (marcados.has('assuntos')) patch.assuntos = m.assuntos;
-    aplicar.mutate(patch);
-  };
-  const toggle = (key: Campo) => setMarcados((prev) => {
-    const next = new Set(prev);
-    if (next.has(key)) next.delete(key); else next.add(key);
-    return next;
-  });
+  const escolher = (key: Campo, i: number | undefined) => setEscolhas((prev) => ({ ...prev, [key]: i }));
+  const submit = (lista: GrupoCampo[]) =>
+    aplicar.mutate(Object.assign({}, ...lista.map((g) => (escolhas[g.key] === undefined ? {} : g.opcoes[escolhas[g.key]!].patch))));
 
-  const resultado = busca.data?.resultado;
-  const lista = resultado ? campos(resultado) : [];
+  const { opcoes, falhas = [] } = busca.data ?? {};
+  const lista = opcoes ? grupos(opcoes) : [];
+  const algumaEscolha = lista.some((g) => escolhas[g.key] !== undefined);
   return (
     <Card title="Metadados">
       <div className="space-y-3 text-sm">
@@ -192,33 +204,38 @@ function MetadadosCard({ book }: { book: BookDetail }) {
           <button disabled={busca.isPending} onClick={() => busca.mutate()} className="btn">
             {busca.isPending ? 'Buscando…' : 'Buscar metadados'}
           </button>
-          <span className="muted">no Open Library, por título e autor</span>
+          <span className="muted">no Google Books, Hardcover e Open Library, por título e autor</span>
         </div>
         {busca.isError && (
-          <p className="error">{busca.error instanceof ApiError && busca.error.status === 502 ? 'O Open Library não respondeu. Tente de novo mais tarde.' : 'Erro ao buscar metadados.'}</p>
+          <p className="error">{busca.error instanceof ApiError && busca.error.status === 502 ? 'Nenhuma fonte respondeu. Tente de novo mais tarde.' : 'Erro ao buscar metadados.'}</p>
         )}
-        {busca.isSuccess && !resultado && <p>Nada encontrado no Open Library.</p>}
-        {resultado && lista.length === 0 && <p>Encontrado “{resultado.titulo}”, mas não há nada novo para aplicar.</p>}
-        {resultado && lista.length > 0 && (
-          <div className="space-y-2">
-            <p>Encontrado: <span className="font-medium">{resultado.titulo}</span></p>
-            {lista.map((c) => (
-              <label key={c.key} className="flex items-start gap-2">
-                <input type="checkbox" checked={marcados.has(c.key)} onChange={() => toggle(c.key)} className="mt-1" />
-                <span className="min-w-0 break-words"><span className="muted">{c.label}:</span> {c.value}</span>
-              </label>
+        {falhas.length > 0 && <p className="muted">Sem resposta de {nomesFontes(falhas)}.</p>}
+        {busca.isSuccess && !opcoes && <p>Nada encontrado.</p>}
+        {opcoes && lista.length === 0 && <p>Nada novo para aplicar.</p>}
+        {lista.length > 0 && (
+          <div className="space-y-3">
+            {lista.map((g) => (
+              <fieldset key={g.key} className="space-y-1">
+                <legend className="muted">{g.label}</legend>
+                {g.opcoes.map((op, i) => (
+                  <label key={i} className="flex items-start gap-2">
+                    <input type="radio" name={`meta-${g.key}`} checked={escolhas[g.key] === i} onChange={() => escolher(g.key, i)} className="mt-1" />
+                    <span className="min-w-0 break-words">{op.texto} <span className="muted">· {nomesFontes(op.fontes)}</span></span>
+                  </label>
+                ))}
+                <label className="flex items-start gap-2">
+                  <input type="radio" name={`meta-${g.key}`} checked={escolhas[g.key] === undefined} onChange={() => escolher(g.key, undefined)} className="mt-1" />
+                  <span className="muted">Não alterar</span>
+                </label>
+              </fieldset>
             ))}
-            <button
-              disabled={marcados.size === 0 || aplicar.isPending}
-              onClick={() => submit(resultado)}
-              className="btn-primary"
-            >
-              Aplicar selecionados
+            <button disabled={!algumaEscolha || aplicar.isPending} onClick={() => submit(lista)} className="btn-primary">
+              Aplicar escolhidos
             </button>
             {aplicar.isError && <p className="error">Erro ao aplicar.</p>}
           </div>
         )}
-        {aplicar.isSuccess && !resultado && <p className="success">Metadados aplicados.</p>}
+        {aplicar.isSuccess && !opcoes && <p className="success">Metadados aplicados.</p>}
       </div>
     </Card>
   );

@@ -26,12 +26,18 @@ describe('fetchHardcover', () => {
     expect(initOf(fetchFn)[1].headers).toMatchObject({ authorization: `Bearer ${TOKEN}` });
   });
 
-  it('normalizes the first hit', async () => {
+  it('asks for the most read books first', async () => {
+    const fetchFn = reply(hit({}));
+    await fetchHardcover({ title: 'x' }, TOKEN, fetchFn);
+    expect(JSON.parse(initOf(fetchFn)[1].body as string).query).toContain('sort: "users_count:desc"');
+  });
+
+  it('normalizes each hit', async () => {
     const fetchFn = reply(hit({
       title: 'Dom Casmurro', author_names: ['Machado', ' de Assis '], pages: 256, release_year: 1899,
       genres: ['Fiction', ' ', 'Classic', ...Array.from({ length: 10 }, (_, i) => `g${i}`)],
     }));
-    expect(await fetchHardcover({ title: 'Dom Casmurro' }, TOKEN, fetchFn)).toEqual({
+    expect((await fetchHardcover({ title: 'Dom Casmurro' }, TOKEN, fetchFn))[0]).toEqual({
       titulo: 'Dom Casmurro', autores: 'Machado\nde Assis', paginas: 256, anoPublicacao: 1899,
       assuntos: ['Fiction', 'Classic', 'g0', 'g1', 'g2', 'g3', 'g4', 'g5'],
     });
@@ -39,15 +45,16 @@ describe('fetchHardcover', () => {
 
   it('drops malformed fields', async () => {
     const fetchFn = reply(hit({ title: 42, author_names: ['A', 7, null], pages: -3, release_year: '1999', genres: 'Fiction' }));
-    expect(await fetchHardcover({ title: 'x' }, TOKEN, fetchFn)).toEqual({
+    expect((await fetchHardcover({ title: 'x' }, TOKEN, fetchFn))[0]).toEqual({
       titulo: '', autores: 'A', paginas: null, anoPublicacao: null, assuntos: [],
     });
   });
 
-  it('returns null when there is no hit or the shape is off', async () => {
-    expect(await fetchHardcover({ title: 'x' }, TOKEN, reply({ data: { search: { results: { hits: [] } } } }))).toBeNull();
-    expect(await fetchHardcover({ title: 'x' }, TOKEN, reply({ data: { search: { results: 'nope' } } }))).toBeNull();
-    expect(await fetchHardcover({ title: 'x' }, TOKEN, reply(null))).toBeNull();
+  it('returns an empty list when there is no hit or the shape is off', async () => {
+    expect(await fetchHardcover({ title: 'x' }, TOKEN, reply({ data: { search: { results: { hits: [] } } } }))).toEqual([]);
+    expect(await fetchHardcover({ title: 'x' }, TOKEN, reply({ data: { search: { results: 'nope' } } }))).toEqual([]);
+    expect(await fetchHardcover({ title: 'x' }, TOKEN, reply({ data: { search: { results: { hits: ['x', { document: 1 }] } } } }))).toEqual([]);
+    expect(await fetchHardcover({ title: 'x' }, TOKEN, reply(null))).toEqual([]);
   });
 
   it('throws on non-2xx without leaking the token', async () => {

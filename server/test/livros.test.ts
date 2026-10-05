@@ -156,15 +156,21 @@ describe('metadados', () => {
     subject: ['Ficção científica', 'Desertos', 'Política', 'a', 'b', 'c', 'd', 'e', 'f', 'g'],
   };
 
+  const ol = (v: unknown) => [{ valor: v, fontes: ['openlibrary'] }];
+
   it('looks the book up on Open Library by title and first author', async () => {
     await sendImport({ books: [mkBook('a1', { title: 'Duna', authors: 'Frank Herbert\nX' })], stats: [] }).expect(200);
     fetchImpl = async () => Response.json({ docs: [doc] });
     const agent = await login();
     const res = await agent.get('/api/livros/a1/metadados').expect(200);
-    expect(res.body.resultado).toEqual({
-      titulo: 'Duna', autores: 'Frank Herbert\nOutro', paginas: 412, anoPublicacao: 1965,
-      assuntos: ['Ficção científica', 'Desertos', 'Política', 'a', 'b', 'c', 'd', 'e'],
+    expect(res.body).toEqual({
+      opcoes: {
+        autores: ol('Frank Herbert\nOutro'), paginas: ol(412), anoPublicacao: ol(1965),
+        assuntos: ol(['Ficção científica', 'Desertos', 'Política', 'a', 'b', 'c', 'd', 'e']),
+      },
+      falhas: [],
     });
+    expect(fetchCalls).toHaveLength(1);
     const url = new URL(fetchCalls[0]);
     expect(url.origin + url.pathname).toBe('https://openlibrary.org/search.json');
     expect(url.searchParams.get('title')).toBe('Duna');
@@ -174,7 +180,7 @@ describe('metadados', () => {
   it('returns null when nothing is found and 502 when the lookup fails', async () => {
     await sendImport({ books: [mkBook('a1')], stats: [] }).expect(200);
     const agent = await login();
-    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body).toEqual({ resultado: null });
+    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body).toEqual({ opcoes: null, falhas: [] });
 
     fetchImpl = async () => { throw new Error('offline'); };
     expect((await agent.get('/api/livros/a1/metadados').expect(502)).body.error).toEqual(expect.any(String));
@@ -182,6 +188,23 @@ describe('metadados', () => {
     fetchImpl = async () => new Response('boom', { status: 500 });
     await agent.get('/api/livros/a1/metadados').expect(502);
     await agent.get('/api/livros/zz/metadados').expect(404);
+  });
+
+  it('merges equal values across configured sources and reports the ones that failed', async () => {
+    const fetchFn = (async (url: string) => {
+      if (url.includes('googleapis')) return Response.json({ items: [{ volumeInfo: { title: 'Duna', authors: ['Frank Herbert'], pageCount: 412, publishedDate: '2017-01-01' } }] });
+      if (url.includes('hardcover')) return new Response('nope', { status: 401 });
+      return Response.json({ docs: [{ ...doc, author_name: ['frank herbert'], subject: [] }] });
+    }) as typeof fetch;
+    app = createApp(db, { ...config, googleBooksApiKey: 'g', hardcoverToken: 'h' }, { fetchCovers: false, fetchFn });
+    await sendImport({ books: [mkBook('a1', { title: 'Duna', authors: 'Frank Herbert' })], stats: [] }).expect(200);
+    const agent = await login();
+    const { opcoes, falhas } = (await agent.get('/api/livros/a1/metadados').expect(200)).body;
+    expect(falhas).toEqual(['hardcover']);
+    expect(opcoes.autores).toEqual([{ valor: 'Frank Herbert', fontes: ['google', 'openlibrary'] }]);
+    expect(opcoes.paginas).toEqual([{ valor: 412, fontes: ['google', 'openlibrary'] }]);
+    expect(opcoes.anoPublicacao).toEqual(expect.arrayContaining([{ valor: 2017, fontes: ['google'] }, { valor: 1965, fontes: ['openlibrary'] }]));
+    expect(opcoes.assuntos).toEqual([]);
   });
 
   it('applies chosen fields and keeps them across imports', async () => {
@@ -218,17 +241,17 @@ describe('metadados', () => {
       docs: [{ title: 42, author_name: 'Frank Herbert', number_of_pages_median: -3, first_publish_year: 1965.5, subject: { a: 1 } }],
     });
     const agent = await login();
-    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body.resultado)
-      .toEqual({ titulo: '', autores: '', paginas: null, anoPublicacao: null, assuntos: [] });
+    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body.opcoes)
+      .toEqual({ autores: [], paginas: [], anoPublicacao: [], assuntos: [] });
 
     fetchImpl = async () => Response.json({
       docs: [{ title: 'Duna', author_name: ['Frank Herbert', 7, ''], number_of_pages_median: 412, first_publish_year: 0, subject: ['Política', null] }],
     });
-    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body.resultado)
-      .toEqual({ titulo: 'Duna', autores: 'Frank Herbert', paginas: 412, anoPublicacao: null, assuntos: ['Política'] });
+    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body.opcoes)
+      .toEqual({ autores: ol('Frank Herbert'), paginas: ol(412), anoPublicacao: [], assuntos: ol(['Política']) });
 
     fetchImpl = async () => Response.json({ docs: 'nope' });
-    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body).toEqual({ resultado: null });
+    expect((await agent.get('/api/livros/a1/metadados').expect(200)).body).toEqual({ opcoes: null, falhas: [] });
   });
 
   it('rejects invalid metadata patches', async () => {

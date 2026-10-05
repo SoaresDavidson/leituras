@@ -11,9 +11,10 @@ import { dayKey } from './dates';
 import type { Db } from './db';
 import { getFoco, setFila, updateFocoSettings } from './foco';
 import {
-  applyMetadados, deleteBook, dropBlacklisted, fetchMetadados, getLivroExtras, getLivros, parseMetadadosPatch, removeFromBlacklist, setMaisTarde,
+  applyMetadados, deleteBook, dropBlacklisted, getLivroExtras, getLivros, parseMetadadosPatch, removeFromBlacklist, setMaisTarde,
 } from './livros';
 import { GATILHO_MAX, getHabito, readHabitoSettings, updateHabitoSettings } from './habito';
+import { buscarMetadados } from './metadados';
 import { getPainelConfig, parsePainelPatch, resetPainelConfig, updatePainelConfig } from './painel';
 import { getRetroPeriodo, getRetrospectiva, MAX_OFFSET, updateRetroSettings } from './retrospectiva';
 import { getJogo, trocarCarta } from './jogo';
@@ -234,14 +235,13 @@ export function createApp(db: Db, config: Config, options: { fetchCovers?: boole
   api.get('/livros/:md5/metadados', async (req, res) => {
     let resultado;
     try {
-      resultado = await fetchMetadados(db, req.params.md5, options.fetchFn);
-    } catch (err) {
-      console.warn(`Metadata lookup failed for ${req.params.md5}:`, err);
-      res.status(502).json({ error: 'Não foi possível consultar o Open Library' });
+      resultado = await buscarMetadados(db, req.params.md5, config, options.fetchFn);
+    } catch {
+      res.status(502).json({ error: 'Nenhuma fonte de metadados respondeu' });
       return;
     }
     if (resultado === undefined) { notFound(res); return; }
-    res.json({ resultado });
+    res.json(resultado);
   });
 
   api.post('/livros/:md5/metadados', (req, res) => {

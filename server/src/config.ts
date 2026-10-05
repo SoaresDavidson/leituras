@@ -6,6 +6,9 @@ export type Config = {
   dataPath: string;
   timeZone: string;
   webDistPath: string;
+  // Optional metadata sources; Open Library needs no key
+  googleBooksApiKey?: string;
+  hardcoverToken?: string;
 };
 
 export function loadConfig(env = process.env): Config {
@@ -16,5 +19,7 @@ export function loadConfig(env = process.env): Config {
     dataPath,
     timeZone: env.TZ_NAME ?? 'America/Fortaleza',
     webDistPath: path.resolve(env.WEB_DIST ?? path.join(import.meta.dirname, '../../web/dist')),
+    googleBooksApiKey: env.GOOGLE_BOOKS_API_KEY || undefined,
+    hardcoverToken: env.HARDCOVER_TOKEN || undefined,
   };
 }
