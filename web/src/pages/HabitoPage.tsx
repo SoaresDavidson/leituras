@@ -8,6 +8,7 @@ import { MONTHS, fmtHours } from '../format';
 import { Card } from '../components/Card';
 import Heatmap from '../components/Heatmap';
 import ProgressBar from '../components/ProgressBar';
+import { SkeletonCards } from '../components/Skeleton';
 
 const WEEKDAYS = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
 const NIVEL_LABEL: Record<NivelSequencia, { nome: string; criterio: string; cor: string }> = {
@@ -357,7 +358,7 @@ export default function HabitoPage() {
           </button>
         )}
       </div>
-      {q.isLoading && <p>Carregando…</p>}
+      {q.isLoading && <SkeletonCards />}
       {q.isError && <p className="error">Erro ao carregar o hábito.</p>}
       {h && (
         <>

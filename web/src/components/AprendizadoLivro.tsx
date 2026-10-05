@@ -4,6 +4,7 @@ import type { BookDetail, LivroAprendizado } from '@leituras/shared';
 import { deleteNota, getLivroAprendizado, postNota, putArea } from '../api';
 import { fmtDate } from '../format';
 import { Card } from './Card';
+import { SkeletonLines } from './Skeleton';
 
 export const ErroInline = ({ show, children = 'Não foi possível salvar. Tente de novo.' }: { show: boolean; children?: string }) =>
   show ? <p role="alert" className="error">{children}</p> : null;
@@ -71,7 +72,7 @@ export default function AprendizadoLivro({ book }: { book: BookDetail }) {
           <button onClick={() => livro.refetch()} className="btn">Tentar de novo</button>
         </div>
       )}
-      {livro.isLoading && <p className="muted">Carregando…</p>}
+      {livro.isLoading && <SkeletonLines rows={3} />}
       {livro.data && (
       <div className="space-y-4">
         <label className="block text-sm">Área da árvore de habilidades

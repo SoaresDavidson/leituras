@@ -9,6 +9,7 @@ import { Card } from '../components/Card';
 import Cover from '../components/Cover';
 import ProgressBar from '../components/ProgressBar';
 import { CHART, tooltipStyle } from '../styles/chart';
+import { SkeletonCards } from '../components/Skeleton';
 
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 const fmtDay = (d: string) => `${Number(d.slice(8))} ${MONTHS[Number(d.slice(5, 7)) - 1]}`;
@@ -351,7 +352,7 @@ export default function ConquistasPage() {
           </span>
         )}
       </div>
-      {q.isLoading && <p role="status">Carregando…</p>}
+      {q.isLoading && <SkeletonCards />}
       {q.isError && (
         <div role="alert" className="error flex flex-wrap items-center gap-3">
           Erro ao carregar as conquistas.

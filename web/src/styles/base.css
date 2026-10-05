@@ -1,9 +1,18 @@
 @layer base {
   html { scroll-behavior: smooth; }
   body {
-    @apply bg-bg font-sans text-sm/normal text-fg antialiased;
+    @apply min-h-dvh bg-bg font-sans text-sm/normal text-fg antialiased;
+    /* one warm light source from the top-left, matching the gold accent */
+    background-image: radial-gradient(60rem 30rem at 0% -10%, var(--glow), transparent 70%);
+    background-attachment: fixed;
   }
-  h1, h2, h3, h4 { @apply font-mono; }
+  /* film grain: breaks the flat digital surface without competing with content */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  h1, h2, h3, h4 { @apply font-mono text-balance; }
+  p { text-wrap: pretty; }
   button { @apply cursor-pointer disabled:cursor-default; }
   :focus-visible { @apply rounded outline-2 outline-offset-2 outline-accent; }
   svg text { @apply font-mono; }

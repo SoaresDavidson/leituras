@@ -29,6 +29,7 @@ export default function Layout() {
   };
   return (
     <>
+      <a href="#conteudo" className="skip-link">Pular para o conteúdo</a>
       <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3.5 gap-y-1 px-4 pt-2 sm:px-5 sm:py-2.5">
           <Link to="/" className="font-mono text-base font-bold tracking-tight">
@@ -44,7 +45,7 @@ export default function Layout() {
           <button onClick={out} className="btn ml-auto">Sair</button>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 pb-16 sm:px-5">
+      <main id="conteudo" tabIndex={-1} className="outline-none mx-auto max-w-6xl px-4 py-6 pb-16 sm:px-5">
         <div key={pathname} className="animate-enter space-y-6">
           <Outlet />
         </div>

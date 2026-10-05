@@ -12,6 +12,7 @@ import Cover from '../components/Cover';
 import ProgressBar from '../components/ProgressBar';
 import StatusBadge from '../components/StatusBadge';
 import AprendizadoLivro from '../components/AprendizadoLivro';
+import { SkeletonCards } from '../components/Skeleton';
 
 function EditForm({ book }: { book: BookDetail }) {
   const qc = useQueryClient();
@@ -291,7 +292,7 @@ export default function BookPage() {
   const { md5 = '' } = useParams();
   const q = useQuery({ queryKey: ['book', md5], queryFn: () => getBook(md5) });
   const extras = useQuery({ queryKey: ['livro-extras', md5], queryFn: () => getLivroExtras(md5) });
-  if (q.isLoading) return <p>Carregando…</p>;
+  if (q.isLoading) return <SkeletonCards count={2} height="h-40" />;
   if (!q.data) return <p className="error">Livro não encontrado.</p>;
   const b = q.data;
 

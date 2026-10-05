@@ -7,6 +7,7 @@ import { fmtDate, fmtHours } from '../format';
 import { Card, Stat } from '../components/Card';
 import ProgressBar from '../components/ProgressBar';
 import { ErroInline, NovaNota, useAprendizadoMutation } from '../components/AprendizadoLivro';
+import { SkeletonCards } from '../components/Skeleton';
 
 const MAX_NIVEL = 5;
 
@@ -264,7 +265,7 @@ export default function AprendizadoPage() {
   return (
     <>
       <h1 className="page-title">Aprendizado</h1>
-      {q.isLoading && <p>Carregando…</p>}
+      {q.isLoading && <SkeletonCards />}
       {q.isError && <p className="error">Erro ao carregar o aprendizado.</p>}
       {a && (
         <>

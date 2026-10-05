@@ -9,6 +9,7 @@ import { MONTHS, fmtDate, fmtHours } from '../format';
 import { Card } from '../components/Card';
 import Cover from '../components/Cover';
 import ProgressBar from '../components/ProgressBar';
+import { SkeletonCards, SkeletonLines } from '../components/Skeleton';
 
 const num = (n: number) => n.toLocaleString('pt-BR');
 const dayMonth = (d: string) => fmtDate(d).slice(0, 5);
@@ -71,7 +72,7 @@ function Periodo() {
         </div>
       </div>
       {q.isError && <p className="error">Erro ao carregar a retrospectiva.</p>}
-      {q.isPending && <p>Carregando…</p>}
+      {q.isPending && <SkeletonCards />}
       {p && (
         <div className={`space-y-4 ${q.isPlaceholderData ? 'opacity-60' : ''}`}>
           {offset === 0 && <p className="muted">{tipo === 'semana' ? 'Semana' : 'Mês'} em andamento; a comparação é com o {nome} anterior inteiro.</p>}
@@ -255,7 +256,7 @@ export default function RetrospectivaPage() {
       <h1 className="page-title">Retrospectiva</h1>
       <Periodo />
       {q.isError && <p className="error">Erro ao carregar os dados.</p>}
-      {q.isLoading && <p>Carregando…</p>}
+      {q.isLoading && <SkeletonLines />}
       {q.data && (
         <>
           <Meta meta={q.data.meta} />

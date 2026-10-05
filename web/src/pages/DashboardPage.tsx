@@ -10,6 +10,7 @@ import { Card, Stat } from '../components/Card';
 import Heatmap from '../components/Heatmap';
 import BookList from '../components/BookList';
 import FocoPanel from '../components/FocoPanel';
+import { SkeletonCards, SkeletonLines } from '../components/Skeleton';
 
 export default function DashboardPage() {
   const now = new Date().getFullYear();
@@ -32,7 +33,8 @@ export default function DashboardPage() {
           {years.map((y) => <option key={y}>{y}</option>)}
         </select>
       </div>
-      {dash.isError && <p className="error">Erro ao carregar o painel.</p>}
+      {dash.isError && <p className="error">Não foi possível carregar o painel. Recarregue a página.</p>}
+      {dash.isLoading && <SkeletonCards count={3} height="h-28" />}
       {d && (
         <>
           {show('foco') && <FocoPanel foco={d.foco} />}
@@ -61,7 +63,7 @@ export default function DashboardPage() {
       )}
       {show('todosLivros') && (
         <Card title="Todos os livros">
-          {books.isLoading ? <p>Carregando…</p> : <BookList books={books.data ?? []} />}
+          {books.isLoading ? <SkeletonLines rows={6} /> : <BookList books={books.data ?? []} />}
         </Card>
       )}
       {allHidden && (

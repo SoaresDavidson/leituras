@@ -6,6 +6,7 @@ import { fmtDate } from '../format';
 import { fuzzyFilter } from '../fuzzy';
 import { Card } from '../components/Card';
 import BookList from '../components/BookList';
+import { SkeletonLines } from '../components/Skeleton';
 
 type Filtro = 'todos' | 'lendo' | 'lido' | 'pausado' | 'arquivado';
 
@@ -101,7 +102,7 @@ export default function LivrosPage() {
         </div>
       </Card>
       <Card>
-        {q.isLoading ? <p>Carregando…</p>
+        {q.isLoading ? <SkeletonLines rows={8} />
           : q.isError ? <p className="error">Erro ao carregar os livros.</p>
           : <BookList books={visible} badge={maisTardeBadge} />}
       </Card>

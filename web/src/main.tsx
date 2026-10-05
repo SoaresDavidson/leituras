@@ -30,7 +30,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/retrospectiva" element={<RetrospectivaPage />} />
             <Route path="/aprendizado" element={<AprendizadoPage />} />
             <Route path="/conquistas" element={<ConquistasPage />} />
-<Route path="/configuracoes" element={<ConfiguracoesPage />} />
+            <Route path="/configuracoes" element={<ConfiguracoesPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

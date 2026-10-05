@@ -24,7 +24,7 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-dvh items-center justify-center px-4">
       <form onSubmit={submit} className="card w-full max-w-xs space-y-4 p-6">
         <h1 className="page-title text-xl">Leituras</h1>
         <input type="password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Senha"
